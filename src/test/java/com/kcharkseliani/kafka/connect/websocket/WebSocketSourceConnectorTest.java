@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,15 +23,29 @@ class WebSocketSourceConnectorTest {
     }
 
     @Test
-    void testStart_WithValidProperties_ShouldNotThrowException() {
+    void testStart_WithValidProperties_ShouldSetConfig() {
         // Arrange
         Map<String, String> props = new HashMap<>();
         props.put("websocket.url", websocketUrl);
         props.put("topic", kafkaTopic);
         props.put("websocket.subscription.message", subscriptionMessage);
 
-        // Act & Assert
-        assertDoesNotThrow(() -> connector.start(props));
+        // Act
+        connector.start(props);
+
+        // Assert
+        // Use reflection to check value of private configProperties
+        try {
+            Field configPropertiesField = WebSocketSourceConnector.class.getDeclaredField("configProperties");
+            configPropertiesField.setAccessible(true);
+            
+            @SuppressWarnings("unchecked")
+            Map<String, String> configProperties = (Map<String, String>) configPropertiesField.get(connector);
+            
+            assertEquals(props, configProperties, "The configProperties field should match the passed props.");
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            fail("Reflection access to configProperties field failed: " + e.getMessage());
+        }
     }
 
     @Test
