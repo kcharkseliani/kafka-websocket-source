@@ -61,7 +61,31 @@ public class WebSocketSourceConnector extends SourceConnector {
     @Override
     public ConfigDef config() {
         return new ConfigDef()
-            // Define configuration options here if needed
-            ;
+            .define(
+                "websocket.url", 
+                ConfigDef.Type.STRING, 
+                ConfigDef.Importance.HIGH, 
+                "The WebSocket URL to connect to."
+            )
+            .define(
+                "topic", 
+                ConfigDef.Type.STRING, 
+                ConfigDef.Importance.HIGH, 
+                "The Kafka topic where WebSocket messages will be published."
+            )
+            .define(
+                "websocket.subscription.message", 
+                ConfigDef.Type.STRING, 
+                "", // Default to an empty string if not provided
+                ConfigDef.Importance.LOW, 
+                "Optional subscription message to send after connecting to the WebSocket."
+            )
+            .define(
+                "tasks.max", 
+                ConfigDef.Type.INT, 
+                1, 
+                ConfigDef.Range.between(1, 1), 
+                ConfigDef.Importance.HIGH, 
+                "Maximum number of tasks (this connector version only supports 1 task)");
     }
 }

@@ -90,5 +90,11 @@ class WebSocketSourceConnectorTest {
         assertEquals(kafkaTopic, config.get("topic"));
         assertEquals(subscriptionMessage, config.get("websocket.subscription.message"));
     }
+
+    @Test
+    void testConfigDoesNotThrowException() {
+        // Act & Assert: Ensure config() does not throw any exceptions when called
+        assertDoesNotThrow(connector::config);
+    }
 }
 
