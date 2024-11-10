@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class WebSocketSourceTask extends SourceTask {
 
@@ -17,14 +19,26 @@ public class WebSocketSourceTask extends SourceTask {
     private String kafkaTopic;
     private LinkedBlockingQueue<SourceRecord> recordsQueue = new LinkedBlockingQueue<>();
     private WebSocketClientFactory clientFactory = new DefaultWebSocketClientFactory();
+    private Properties properties = new Properties();
 
     @Override
     public String version() {
-        return "0.0";
+        return properties.getProperty("app.version", "unknown-version");
     }
 
     @Override
     public void start(Map<String, String> props) {
+        // Load config.properties here
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
+            if (input != null) {
+                properties.load(input);
+            } else {
+                System.out.println("config.properties file not found in resources.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         kafkaTopic = props.get("topic");
         String subscriptionMessage = props.get("websocket.subscription.message"); // Retrieve subscription message
 

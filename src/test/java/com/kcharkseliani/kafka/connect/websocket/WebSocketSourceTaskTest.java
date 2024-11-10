@@ -8,9 +8,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.io.InputStream;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,11 +34,23 @@ public class WebSocketSourceTaskTest {
     private final String websocketUrl = "ws://example.com";
     private final String subscriptionMessage = "{\"action\": \"subscribe\", \"channel\": \"test-stream\"}";
 
+    private Properties properties;
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         task = new WebSocketSourceTask();
         task.setWebSocketClientFactory(clientFactory);
+
+        // Load properties to verify the version from config.properties
+        properties = new Properties();
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
+            if (input != null) {
+                properties.load(input);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -117,6 +132,30 @@ public class WebSocketSourceTaskTest {
 
         // Verify that client.close() was called
         verify(mockClient).close();
+    }
+
+    @Test
+    public void testVersion_ShouldReturnCorrectVersion() {
+        // Arrange      
+        // Initialize task by calling start with some dummy properties
+        Map<String, String> props = new HashMap<>();
+        props.put("websocket.url", websocketUrl);
+        props.put("topic", kafkaTopic);
+        // Prepare the task
+        when(clientFactory.createClient(any(URI.class), any(), any()))
+            .thenReturn(mockClient);
+
+        // Start the task to initialize properties from config.properties
+        task.start(props);
+
+        // Expected version from the filtered properties file
+        String expectedVersion = properties.getProperty("app.version", "unknown-version");
+
+        // Act
+        String actualVersion = task.version();
+
+        // Assert that the version from task matches expected after calling start
+        assertEquals(expectedVersion, actualVersion, "The version method should return the version specified in config.properties after start.");
     }
 }
 

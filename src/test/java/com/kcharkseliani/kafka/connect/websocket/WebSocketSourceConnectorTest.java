@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,10 +18,21 @@ class WebSocketSourceConnectorTest {
     private final String websocketUrl = "ws://example.com/socket";
     private final String kafkaTopic = "test-topic";
     private final String subscriptionMessage = "{\"type\":\"subscribe\"}";
+    private Properties properties;
 
     @BeforeEach
     void setUp() {
         connector = new WebSocketSourceConnector();
+
+        // Load properties to verify the version from config.properties
+        properties = new Properties();
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
+            if (input != null) {
+                properties.load(input);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -95,6 +108,25 @@ class WebSocketSourceConnectorTest {
     void testConfigDoesNotThrowException() {
         // Act & Assert: Ensure config() does not throw any exceptions when called
         assertDoesNotThrow(connector::config);
+    }
+
+    @Test
+    void testVersion_ShouldReturnCorrectVersion() {
+        // Arrange
+        Map<String, String> props = new HashMap<>();
+        props.put("websocket.url", websocketUrl);
+        props.put("topic", kafkaTopic);
+        
+        connector.start(props);
+
+        // Expected version from the properties file or "unknown-version" if not set
+        String expectedVersion = properties.getProperty("app.version", "unknown-version");
+
+        // Act
+        String actualVersion = connector.version();
+
+        // Assert
+        assertEquals(expectedVersion, actualVersion, "The version method should return the correct app version.");
     }
 }
 

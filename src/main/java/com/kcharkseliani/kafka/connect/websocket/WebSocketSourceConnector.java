@@ -8,18 +8,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class WebSocketSourceConnector extends SourceConnector {
 
     private Map<String, String> configProperties;
+    private Properties properties = new Properties();
 
     @Override
     public String version() {
-        return "0.0";
+        return properties.getProperty("app.version", "unknown-version");
     }
 
     @Override
     public void start(Map<String, String> props) {
+        // Load config.properties here
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
+            if (input != null) {
+                properties.load(input);
+            } else {
+                System.out.println("config.properties file not found in resources.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
         // Retrieve essential configurations
         String websocketUrl = props.get("websocket.url");
