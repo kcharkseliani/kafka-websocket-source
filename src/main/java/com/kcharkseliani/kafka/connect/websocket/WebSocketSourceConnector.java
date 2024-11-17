@@ -71,34 +71,28 @@ public class WebSocketSourceConnector extends SourceConnector {
         // Clean up resources if needed
     }
 
-    @Override
+    private static final ConfigDef CONFIG_DEF = new ConfigDef()
+        .define(
+            "websocket.url", 
+            ConfigDef.Type.STRING, 
+            ConfigDef.Importance.HIGH, 
+            "The WebSocket URL to connect to."
+        )
+        .define(
+            "topic", 
+            ConfigDef.Type.STRING, 
+            ConfigDef.Importance.HIGH, 
+            "The Kafka topic where WebSocket messages will be published."
+        )
+        .define(
+            "websocket.subscription.message", 
+            ConfigDef.Type.STRING, 
+            "", // Default to an empty string if not provided
+            ConfigDef.Importance.LOW, 
+            "Optional subscription message to send after connecting to the WebSocket."
+        );
+
     public ConfigDef config() {
-        return new ConfigDef()
-            .define(
-                "websocket.url", 
-                ConfigDef.Type.STRING, 
-                ConfigDef.Importance.HIGH, 
-                "The WebSocket URL to connect to."
-            )
-            .define(
-                "topic", 
-                ConfigDef.Type.STRING, 
-                ConfigDef.Importance.HIGH, 
-                "The Kafka topic where WebSocket messages will be published."
-            )
-            .define(
-                "websocket.subscription.message", 
-                ConfigDef.Type.STRING, 
-                "", // Default to an empty string if not provided
-                ConfigDef.Importance.LOW, 
-                "Optional subscription message to send after connecting to the WebSocket."
-            )
-            .define(
-                "tasks.max", 
-                ConfigDef.Type.INT, 
-                1, 
-                ConfigDef.Range.between(1, 1), 
-                ConfigDef.Importance.HIGH, 
-                "Maximum number of tasks (this connector version only supports 1 task)");
+        return CONFIG_DEF;
     }
 }
