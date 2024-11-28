@@ -14,7 +14,29 @@ import java.util.Properties;
 public class WebSocketSourceConnector extends SourceConnector {
 
     private Map<String, String> configProperties;
+
     private static final Properties properties = new Properties();
+    
+    private static final ConfigDef CONFIG_DEF = new ConfigDef()
+        .define(
+            "websocket.url", 
+            ConfigDef.Type.STRING, 
+            ConfigDef.Importance.HIGH, 
+            "The WebSocket URL to connect to."
+        )
+        .define(
+            "topic", 
+            ConfigDef.Type.STRING, 
+            ConfigDef.Importance.HIGH, 
+            "The Kafka topic where WebSocket messages will be published."
+        )
+        .define(
+            "websocket.subscription.message", 
+            ConfigDef.Type.STRING, 
+            "", // Default to an empty string if not provided
+            ConfigDef.Importance.LOW, 
+            "Optional subscription message to send after connecting to the WebSocket."
+        );
     
     static {
         // Load config.properties at class initialization
@@ -72,27 +94,6 @@ public class WebSocketSourceConnector extends SourceConnector {
     public void stop() {
         // Clean up resources if needed
     }
-
-    private static final ConfigDef CONFIG_DEF = new ConfigDef()
-        .define(
-            "websocket.url", 
-            ConfigDef.Type.STRING, 
-            ConfigDef.Importance.HIGH, 
-            "The WebSocket URL to connect to."
-        )
-        .define(
-            "topic", 
-            ConfigDef.Type.STRING, 
-            ConfigDef.Importance.HIGH, 
-            "The Kafka topic where WebSocket messages will be published."
-        )
-        .define(
-            "websocket.subscription.message", 
-            ConfigDef.Type.STRING, 
-            "", // Default to an empty string if not provided
-            ConfigDef.Importance.LOW, 
-            "Optional subscription message to send after connecting to the WebSocket."
-        );
 
     public ConfigDef config() {
         return CONFIG_DEF;
