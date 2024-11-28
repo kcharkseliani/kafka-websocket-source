@@ -14,7 +14,20 @@ import java.util.Properties;
 public class WebSocketSourceConnector extends SourceConnector {
 
     private Map<String, String> configProperties;
-    private Properties properties = new Properties();
+    private static final Properties properties = new Properties();
+    
+    static {
+        // Load config.properties at class initialization
+        try (InputStream input = WebSocketSourceConnector.class.getClassLoader().getResourceAsStream("config.properties")) {
+            if (input != null) {
+                properties.load(input);
+            } else {
+                System.err.println("config.properties file not found in resources.");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 
     @Override
     public String version() {
@@ -23,17 +36,6 @@ public class WebSocketSourceConnector extends SourceConnector {
 
     @Override
     public void start(Map<String, String> props) {
-        // Load config.properties here
-        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
-            if (input != null) {
-                properties.load(input);
-            } else {
-                System.out.println("config.properties file not found in resources.");
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-
         // Retrieve essential configurations
         String websocketUrl = props.get("websocket.url");
         String topic = props.get("topic");
