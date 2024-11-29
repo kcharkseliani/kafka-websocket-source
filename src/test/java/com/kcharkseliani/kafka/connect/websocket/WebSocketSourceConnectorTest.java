@@ -116,8 +116,6 @@ class WebSocketSourceConnectorTest {
         Map<String, String> props = new HashMap<>();
         props.put("websocket.url", websocketUrl);
         props.put("topic", kafkaTopic);
-        
-        connector.start(props);
 
         // Expected version from the properties file or "unknown-version" if not set
         String expectedVersion = properties.getProperty("app.version", "unknown-version");
