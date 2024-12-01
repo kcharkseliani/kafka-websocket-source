@@ -16,7 +16,7 @@ public class WebSocketSourceConnector extends SourceConnector {
     private Map<String, String> configProperties;
 
     private static final Properties properties = new Properties();
-    
+
     private static final ConfigDef CONFIG_DEF = new ConfigDef()
         .define(
             "websocket.url", 
@@ -40,7 +40,9 @@ public class WebSocketSourceConnector extends SourceConnector {
     
     static {
         // Load config.properties at class initialization
-        try (InputStream input = WebSocketSourceConnector.class.getClassLoader().getResourceAsStream("config.properties")) {
+        try (InputStream input = WebSocketSourceConnector.class
+            .getClassLoader()
+            .getResourceAsStream("config.properties")) {
             if (input != null) {
                 properties.load(input);
             } else {
