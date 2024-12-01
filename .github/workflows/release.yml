@@ -37,7 +37,7 @@ jobs:
 
     # Step 5: Update Maven POM version
     - name: Display Version
-      run: echo "Version: ${{ steps.gitversion.outputs.semVer }}"
+      run: echo "Version ${{ steps.gitversion.outputs.semVer }}"
 
     - name: Set Maven Project Version
       run: mvn versions:set -DnewVersion=${{ steps.gitversion.outputs.semVer }}
