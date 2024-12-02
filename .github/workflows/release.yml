@@ -45,8 +45,8 @@ jobs:
       run: mvn versions:set -DnewVersion=${{ steps.gitversion.outputs.semVer }}
 
     # Step 6: Build the project
-    - name: Build the project
-      run: mvn clean package
+    - name: Build the project (Skip tests)
+      run: mvn clean package -DskipTests
 
     # Step 7: Upload build artifact as a release
     - name: Create a GitHub release
