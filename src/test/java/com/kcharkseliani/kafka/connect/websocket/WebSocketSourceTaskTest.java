@@ -63,8 +63,8 @@ public class WebSocketSourceTaskTest {
         );
 
         // Set up the factory to return the mock client
-        when(clientFactory.createClient(any(URI.class), any(String.class), any(MessageHandler.class)))
-            .thenReturn(mockClient);
+        doReturn(mockClient)
+            .when(clientFactory).createClient(any(URI.class), any(String.class), any(MessageHandler.class));
         
         // Call start with the prepared props
         task.start(props);
@@ -90,8 +90,8 @@ public class WebSocketSourceTaskTest {
         ArgumentCaptor<MessageHandler> messageHandlerCaptor = ArgumentCaptor.forClass(MessageHandler.class);
         
         // Set up the factory to return a mock client and capture the handler
-        when(clientFactory.createClient(any(URI.class), any(String.class), messageHandlerCaptor.capture()))
-            .thenReturn(mockClient);
+        doReturn(mockClient)
+            .when(clientFactory).createClient(any(URI.class), any(String.class), messageHandlerCaptor.capture());
 
         // Start the task
         task.start(props);
@@ -122,8 +122,8 @@ public class WebSocketSourceTaskTest {
             "websocket.subscription.message", subscriptionMessage
         );
         // Prepare the task
-        when(clientFactory.createClient(any(URI.class), any(String.class), any(MessageHandler.class)))
-            .thenReturn(mockClient);
+        doReturn(mockClient)
+            .when(clientFactory).createClient(any(URI.class), any(String.class), any(MessageHandler.class));
 
         task.start(props);
 
@@ -144,8 +144,8 @@ public class WebSocketSourceTaskTest {
             "websocket.subscription.message", subscriptionMessage
         );
         // Prepare the task
-        when(clientFactory.createClient(any(URI.class), any(String.class), any(MessageHandler.class)))
-            .thenReturn(mockClient);
+        doReturn(mockClient)
+            .when(clientFactory).createClient(any(URI.class), any(String.class), any(MessageHandler.class));
 
         // Start the task to initialize properties from config.properties
         task.start(props);
