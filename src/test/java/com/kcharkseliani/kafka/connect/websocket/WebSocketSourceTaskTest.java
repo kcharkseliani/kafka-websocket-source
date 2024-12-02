@@ -63,7 +63,7 @@ public class WebSocketSourceTaskTest {
         );
 
         // Set up the factory to return the mock client
-        when(clientFactory.createClient(any(URI.class), any(String.class), any()))
+        when(clientFactory.createClient(any(URI.class), any(String.class), any(MessageHandler.class)))
             .thenReturn(mockClient);
         
         // Call start with the prepared props
@@ -71,7 +71,7 @@ public class WebSocketSourceTaskTest {
 
         // Assert
         // Verify that the clientFactory.createClient method was called with the expected arguments
-        verify(clientFactory).createClient(eq(URI.create(websocketUrl)), eq(subscriptionMessage), any());
+        verify(clientFactory).createClient(eq(URI.create(websocketUrl)), eq(subscriptionMessage), any(MessageHandler.class));
         
         // Verify that client.connect() was called
         verify(mockClient).connect();
@@ -122,7 +122,7 @@ public class WebSocketSourceTaskTest {
             "websocket.subscription.message", subscriptionMessage
         );
         // Prepare the task
-        when(clientFactory.createClient(any(URI.class), any(), any()))
+        when(clientFactory.createClient(any(URI.class), any(String.class), any(MessageHandler.class)))
             .thenReturn(mockClient);
 
         task.start(props);
@@ -137,12 +137,14 @@ public class WebSocketSourceTaskTest {
     @Test
     public void testVersion_ShouldReturnCorrectVersion() {
         // Arrange      
-        // Initialize task by calling start with some dummy properties
-        Map<String, String> props = new HashMap<>();
-        props.put("websocket.url", websocketUrl);
-        props.put("topic", kafkaTopic);
+        // Set up props and initialize task
+        Map<String, String> props = Map.of(
+            "topic", kafkaTopic,
+            "websocket.url", websocketUrl,
+            "websocket.subscription.message", subscriptionMessage
+        );
         // Prepare the task
-        when(clientFactory.createClient(any(URI.class), any(), any()))
+        when(clientFactory.createClient(any(URI.class), any(String.class), any(MessageHandler.class)))
             .thenReturn(mockClient);
 
         // Start the task to initialize properties from config.properties
