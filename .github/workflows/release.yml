@@ -4,8 +4,13 @@ on:
   push:
     branches:
       - dev
-      # This is temporary to allow workflow testing
-      - feature/2-add-dev-release-workflow
+      
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Feature branch name'
+        required: true
+        default: 'feature/branch-name'
 
 jobs:
   release:

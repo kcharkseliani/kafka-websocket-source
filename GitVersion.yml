@@ -7,7 +7,7 @@ branches:
     label: beta
   main:
     label: ''
-    increment: Minor
+    increment: Patch
 ignore:
   sha: []
 merge-message-formats: {}
