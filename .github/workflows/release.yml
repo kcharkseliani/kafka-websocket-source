@@ -50,6 +50,7 @@ jobs:
 
     # Step 7: Upload build artifact as a release
     - name: Create a GitHub release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
