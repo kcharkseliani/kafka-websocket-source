@@ -1,6 +1,7 @@
 assembly-versioning-scheme: MajorMinorPatch
 branches:
   feature:
+    mode: ContinuousDelivery
     label: 'alpha-{BranchName}'
   dev:
     regex: ^dev$
