@@ -53,7 +53,19 @@ jobs:
     - name: Build the project (Skip tests)
       run: mvn clean package -DskipTests
 
-    # Step 7: Upload build artifact as a release
+      # Step 7: Tag the commit with the version
+    - name: Tag the commit with version
+      if: github.event_name == 'push'
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git tag -a ${{ steps.gitversion.outputs.semVer }} -m "Release ${{ steps.gitversion.outputs.semVer }}"
+        git push origin ${{ steps.gitversion.outputs.semVer }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+    # Step 8: Upload build artifact as a release
     - name: Create a GitHub release
       id: create_release
       uses: actions/create-release@v1
@@ -65,6 +77,7 @@ jobs:
         draft: true
         prerelease: true
 
+    # Step 9: Upload .jar to release
     - name: Upload .jar to release
       uses: actions/upload-release-asset@v1
       env:
