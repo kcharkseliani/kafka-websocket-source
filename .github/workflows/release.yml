@@ -5,6 +5,7 @@ on:
     branches:
       - dev
       - release/*
+      - main
       
   workflow_dispatch:
     inputs:
@@ -32,29 +33,40 @@ jobs:
         distribution: 'adopt'
         cache: 'maven'
 
-    # Step 3: Install GitVersion
+    # Step 3: Tag immediately if the branch is `main`
+    - name: Tag main branch immediately
+      if: github.ref == 'refs/heads/main'
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git tag -a ${{ steps.gitversion.outputs.majorMinorPatch }} -m "Stable Release ${{ steps.gitversion.outputs.majorMinorPatch }}"
+        git push origin ${{ steps.gitversion.outputs.majorMinorPatch }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Step 4: Install GitVersion
     - name: Install GitVersion
       uses: gittools/actions/gitversion/setup@v3.0.3
       with:
         versionSpec: '6.x'
 
-    # Step 4: Run GitVersion to determine the version
+    # Step 5: Run GitVersion to determine the version
     - name: Determine version with GitVersion
       id: gitversion
       uses: gittools/actions/gitversion/execute@v3.0.3
 
-    # Step 5: Update Maven POM version
+    # Step 6: Update Maven POM version
     - name: Display Version
       run: echo "Version ${{ steps.gitversion.outputs.semVer }}"
 
     - name: Set Maven Project Version
       run: mvn versions:set -DnewVersion=${{ steps.gitversion.outputs.semVer }}
 
-    # Step 6: Build the project
+    # Step 7: Build the project
     - name: Build the project (Skip tests)
       run: mvn clean package -DskipTests
 
-      # Step 7: Tag the commit with the version
+    # Step 8: Tag the commit with the version
     - name: Tag the commit with version
       if: startsWith(github.ref, 'refs/heads/release/')
       run: |
@@ -66,7 +78,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
-    # Step 8: Upload build artifact as a release
+    # Step 9: Upload build artifact as a release
     - name: Create a GitHub release
       id: create_release
       uses: actions/create-release@v1
@@ -76,9 +88,9 @@ jobs:
         tag_name: ${{ steps.gitversion.outputs.semVer }}
         release_name: Release ${{ steps.gitversion.outputs.semVer }}
         draft: true
-        prerelease: true
+        prerelease: ${{ github.ref != 'refs/heads/main' }}
 
-    # Step 9: Upload .jar to release
+    # Step 10: Upload .jar to release
     - name: Upload .jar to release
       uses: actions/upload-release-asset@v1
       env:
