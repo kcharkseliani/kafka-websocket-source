@@ -1,14 +1,14 @@
-assembly-versioning-scheme: MajorMinorPatch
 branches:
   feature:
-    mode: ContinuousDeployment
-    label: 'alpha-{BranchName}'
-  dev:
-    regex: ^dev$
-    label: beta
+    mode: ContinuousDelivery
+    label: '{BranchName}'
+    increment: Inherit
+  develop:
+    label: alpha
+    increment: Minor
   main:
     label: ''
-    increment: Minor
+    increment: Patch
 ignore:
   sha: []
 merge-message-formats: {}
