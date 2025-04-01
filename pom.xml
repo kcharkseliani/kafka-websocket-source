@@ -50,6 +50,35 @@
         <version>5.14.0</version>
         <scope>test</scope>
     </dependency>
+
+    <!-- For setting up Testcontainers with Kafka and Kafka Connect -->
+    <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>kafka</artifactId>
+        <version>1.19.1</version>
+        <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>1.19.1</version>
+        <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>3.8.0</version>
+    </dependency>
+
+    <!-- For making REST requests to Connect -->
+    <dependency>
+        <groupId>org.apache.httpcomponents.client5</groupId>
+        <artifactId>httpclient5</artifactId>
+        <version>5.2</version>
+        <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
