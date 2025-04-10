@@ -12,12 +12,14 @@
     <dependency>
         <groupId>org.apache.kafka</groupId>
         <artifactId>connect-api</artifactId>
-        <version>3.0.0</version>
+        <version>3.8.0</version>
+        <scope>provided</scope>
     </dependency>
     <dependency>
         <groupId>org.apache.kafka</groupId>
         <artifactId>kafka-clients</artifactId>
-        <version>3.0.0</version>
+        <version>3.8.0</version>
+        <scope>provided</scope>
     </dependency>
 
     <!-- Java-WebSocket Library -->
@@ -66,12 +68,6 @@
         <scope>test</scope>
     </dependency>
 
-    <dependency>
-        <groupId>org.apache.kafka</groupId>
-        <artifactId>kafka-clients</artifactId>
-        <version>3.8.0</version>
-    </dependency>
-
     <!-- For making REST requests to Connect -->
     <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
@@ -93,13 +89,21 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.1</version>
+        <version>3.4.1</version>
         <executions>
           <execution>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
             </goals>
+            <!-- <configuration>
+              <relocations>
+                <relocation>
+                  <pattern>org.apache.kafka</pattern>
+                  <shadedPattern>shaded.org.apache.kafka</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration> -->
           </execution>
         </executions>
       </plugin>
@@ -115,30 +119,30 @@
       <!-- Add Antrun plugin to move shaded JAR only into the target/plugins 
       folder for integration tests with Testcontainers -->
       <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-antrun-plugin</artifactId>
-      <version>3.1.0</version>
-      <executions>
-        <execution>
-          <id>copy-shaded-jar</id>
-          <phase>package</phase>
-          <configuration>
-            <target>
-              <mkdir dir="target/plugins"/>
-              <copy todir="target/plugins" flatten="true">
-                <fileset dir="target">
-                  <include name="kafka-websocket-source-connector-*.jar"/>
-                  <exclude name="original-*.jar"/>
-                </fileset>
-              </copy>
-            </target>
-          </configuration>
-          <goals>
-            <goal>run</goal>
-          </goals>
-        </execution>
-      </executions>
-    </plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>copy-shaded-jar</id>
+            <phase>package</phase>
+            <configuration>
+              <target>
+                <mkdir dir="target/plugins"/>
+                <copy todir="target/plugins" flatten="true">
+                  <fileset dir="target">
+                    <include name="kafka-websocket-source-connector-*.jar"/>
+                    <exclude name="original-*.jar"/>
+                  </fileset>
+                </copy>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins> 
   </build>
 </project>
