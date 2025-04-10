@@ -28,7 +28,7 @@ public class WebSocketConnectorIntegrationTest {
     private GenericContainer<?> connect;
 
     @BeforeEach
-    void setup() {
+    void setup() throws Exception {
         System.out.println("Testcontainers Docker available: " + DockerClientFactory.instance().isDockerAvailable());
 
         Network network = Network.newNetwork();
@@ -73,7 +73,9 @@ public class WebSocketConnectorIntegrationTest {
                 .withExposedPorts(8083)
                 .dependsOn(kafka);
 
-        connect.start();       
+        connect.start();   
+
+        Thread.sleep(5_000);  
     }
 
     @Test
