@@ -22,7 +22,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.testcontainers.containers.Network;
 
-public class WebSocketConnectorIntegrationTest {
+public class WebSocketConnectorIT {
 
     private KafkaContainer kafka;
     private GenericContainer<?> connect;
