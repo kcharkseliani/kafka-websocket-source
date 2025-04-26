@@ -10,6 +10,7 @@ import org.testcontainers.utility.DockerImageName;
 import com.kcharkseliani.kafka.connect.websocket.util.MockWebSocketServer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.kafka.clients.admin.*;
 
@@ -94,6 +95,16 @@ public class WebSocketConnectorIT {
         deployWebSocketConnector();
     }   
 
+    @Test
+    void testWebSocketConnection() throws Exception {
+        deployWebSocketConnector();
+
+        // Wait up to 5 seconds for connector to establish WebSocket connection
+        boolean connected = waitForWebSocketConnection(5_000);
+
+        assertTrue(connected, "Connector should establish a WebSocket connection to the server");
+    }
+
     @AfterEach
     void teardown() throws InterruptedException {
         if (websocketServer != null) {
@@ -107,6 +118,21 @@ public class WebSocketConnectorIT {
         }
         if (network != null) {
             network.close();
+        }
+    }
+
+    private void createKafkaConnectInternalTopics(String bootstrapServers) throws Exception {
+        Properties props = new Properties();
+        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+
+        try (AdminClient admin = AdminClient.create(props)) {
+            List<NewTopic> topics = List.of(
+                new NewTopic("connect-offsets", 1, (short) 1).configs(Map.of("cleanup.policy", "compact")),
+                new NewTopic("connect-configs", 1, (short) 1).configs(Map.of("cleanup.policy", "compact")),
+                new NewTopic("connect-status", 1, (short) 1).configs(Map.of("cleanup.policy", "compact"))
+            );
+
+            admin.createTopics(topics).all().get(); // blocks until topics are created
         }
     }
 
@@ -133,20 +159,16 @@ public class WebSocketConnectorIT {
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(201, response.statusCode(), "Connector creation failed: " + response.body());
-    }
+    }   
 
-    private void createKafkaConnectInternalTopics(String bootstrapServers) throws Exception {
-        Properties props = new Properties();
-        props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-
-        try (AdminClient admin = AdminClient.create(props)) {
-            List<NewTopic> topics = List.of(
-                new NewTopic("connect-offsets", 1, (short) 1).configs(Map.of("cleanup.policy", "compact")),
-                new NewTopic("connect-configs", 1, (short) 1).configs(Map.of("cleanup.policy", "compact")),
-                new NewTopic("connect-status", 1, (short) 1).configs(Map.of("cleanup.policy", "compact"))
-            );
-
-            admin.createTopics(topics).all().get(); // blocks until topics are created
+    private boolean waitForWebSocketConnection(long timeoutMillis) throws InterruptedException {
+        long start = System.currentTimeMillis();
+        while (System.currentTimeMillis() - start < timeoutMillis) {
+            if (websocketServer.getConnections().size() >= 1) {
+                return true;
+            }
+            Thread.sleep(100); // sleep 100ms between retries
         }
+        return false;
     }
 }
