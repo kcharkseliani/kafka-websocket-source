@@ -63,6 +63,7 @@ public class WebSocketConnectorIT {
 
         connect = new GenericContainer<>(DockerImageName.parse("confluentinc/cp-kafka-connect:7.8.0"))
                 .withNetwork(network)
+                .withExtraHost("host.testcontainers.internal", "host-gateway")
                 .withEnv("CONNECT_BOOTSTRAP_SERVERS", "kafka:9092")
                 .withEnv("CONNECT_REST_PORT", "8083")
                 .withEnv("CONNECT_REST_ADVERTISED_HOST_NAME", "localhost")
@@ -84,7 +85,7 @@ public class WebSocketConnectorIT {
 
         connect.start();   
 
-        websocketServer = new MockWebSocketServer(new InetSocketAddress("localhost", WEBSOCKET_PORT));
+        websocketServer = new MockWebSocketServer(new InetSocketAddress("0.0.0.0", WEBSOCKET_PORT));
         websocketServer.start();
 
         Thread.sleep(5_000);  
@@ -144,7 +145,7 @@ public class WebSocketConnectorIT {
             "  \"config\": {\n" +
             "    \"connector.class\": \"com.kcharkseliani.kafka.connect.websocket.WebSocketSourceConnector\",\n" +
             "    \"tasks.max\": \"1\",\n" +
-            "    \"websocket.url\": \"ws://localhost:" + WEBSOCKET_PORT + "\",\n" +
+            "    \"websocket.url\": \"ws://host.testcontainers.internal:" + WEBSOCKET_PORT + "\",\n" +
             "    \"topic\": \"" + TOPIC + "\",\n" +
             "    \"websocket.subscription.message\": \"{ \\\"method\\\": \\\"subscribe\\\", \\\"params\\\": { \\\"channel\\\": \\\"trade\\\", \\\"symbol\\\": [\\\"BTC/USD\\\"], \\\"snapshot\\\": false } }\"\n" +
             "  }\n" +
