@@ -29,15 +29,17 @@ public class WebSocketConnectorIT {
 
     private KafkaContainer kafka;
     private GenericContainer<?> connect;
+    private Network network;
 
     private MockWebSocketServer websocketServer;
     private static final int WEBSOCKET_PORT = 9001;
+    private static final String TOPIC = "trades";
 
     @BeforeEach
     void setup() throws Exception {
         System.out.println("Testcontainers Docker available: " + DockerClientFactory.instance().isDockerAvailable());
 
-        Network network = Network.newNetwork();
+        network = Network.newNetwork();
         
         kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.8.0"))
         .withNetwork(network)
@@ -89,6 +91,23 @@ public class WebSocketConnectorIT {
 
     @Test
     void testConnectorWorks() throws Exception {
+        deployWebSocketConnector();
+    }   
+
+    @AfterEach
+    void teardown() {
+        if (connect != null && connect.isRunning()) {
+            connect.stop();
+        }
+        if (kafka != null && kafka.isRunning()) {
+            kafka.stop();
+        }
+        if (network != null) {
+            network.close();
+        }
+    }
+
+    private void deployWebSocketConnector() throws Exception {
         String connectUrl = "http://" + connect.getHost() + ":" + connect.getMappedPort(8083);
 
         String configJson = "{\n" +
@@ -96,8 +115,8 @@ public class WebSocketConnectorIT {
             "  \"config\": {\n" +
             "    \"connector.class\": \"com.kcharkseliani.kafka.connect.websocket.WebSocketSourceConnector\",\n" +
             "    \"tasks.max\": \"1\",\n" +
-            "    \"websocket.url\": \"ws://localhost:9001\",\n" +
-            "    \"topic\": \"trades\",\n" +
+            "    \"websocket.url\": \"ws://localhost:" + WEBSOCKET_PORT + "\",\n" +
+            "    \"topic\": \"" + TOPIC + "\",\n" +
             "    \"websocket.subscription.message\": \"{ \\\"method\\\": \\\"subscribe\\\", \\\"params\\\": { \\\"channel\\\": \\\"trade\\\", \\\"symbol\\\": [\\\"BTC/USD\\\"], \\\"snapshot\\\": false } }\"\n" +
             "  }\n" +
             "}";
@@ -111,22 +130,9 @@ public class WebSocketConnectorIT {
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(201, response.statusCode(), "Connector creation failed: " + response.body());
-
-        // Optional wait to inspect topic data later
-        //Thread.sleep(5_000);
-    }   
-
-    @AfterEach
-    void teardown() {
-        if (connect != null && connect.isRunning()) {
-            connect.stop();
-        }
-        if (kafka != null && kafka.isRunning()) {
-            kafka.stop();
-        }
     }
 
-    public void createKafkaConnectInternalTopics(String bootstrapServers) throws Exception {
+    private void createKafkaConnectInternalTopics(String bootstrapServers) throws Exception {
         Properties props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
 
