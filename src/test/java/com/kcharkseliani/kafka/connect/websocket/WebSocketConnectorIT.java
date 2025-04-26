@@ -95,7 +95,10 @@ public class WebSocketConnectorIT {
     }   
 
     @AfterEach
-    void teardown() {
+    void teardown() throws InterruptedException {
+        if (websocketServer != null) {
+            websocketServer.stop();
+        }
         if (connect != null && connect.isRunning()) {
             connect.stop();
         }
