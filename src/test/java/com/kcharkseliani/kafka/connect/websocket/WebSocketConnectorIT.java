@@ -7,11 +7,14 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import com.kcharkseliani.kafka.connect.websocket.util.MockWebSocketServer;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.apache.kafka.clients.admin.*;
 
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +29,9 @@ public class WebSocketConnectorIT {
 
     private KafkaContainer kafka;
     private GenericContainer<?> connect;
+
+    private MockWebSocketServer websocketServer;
+    private static final int WEBSOCKET_PORT = 9001;
 
     @BeforeEach
     void setup() throws Exception {
@@ -75,6 +81,9 @@ public class WebSocketConnectorIT {
 
         connect.start();   
 
+        websocketServer = new MockWebSocketServer(new InetSocketAddress("localhost", WEBSOCKET_PORT));
+        websocketServer.start();
+
         Thread.sleep(5_000);  
     }
 
@@ -87,7 +96,7 @@ public class WebSocketConnectorIT {
             "  \"config\": {\n" +
             "    \"connector.class\": \"com.kcharkseliani.kafka.connect.websocket.WebSocketSourceConnector\",\n" +
             "    \"tasks.max\": \"1\",\n" +
-            "    \"websocket.url\": \"wss://ws.kraken.com/v2\",\n" +
+            "    \"websocket.url\": \"ws://localhost:9001\",\n" +
             "    \"topic\": \"trades\",\n" +
             "    \"websocket.subscription.message\": \"{ \\\"method\\\": \\\"subscribe\\\", \\\"params\\\": { \\\"channel\\\": \\\"trade\\\", \\\"symbol\\\": [\\\"BTC/USD\\\"], \\\"snapshot\\\": false } }\"\n" +
             "  }\n" +
