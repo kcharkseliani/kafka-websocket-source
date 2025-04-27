@@ -5,8 +5,12 @@ import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 
 import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class MockWebSocketServer extends WebSocketServer {
+
+    private final List<String> receivedMessages = new CopyOnWriteArrayList<>();
 
     public MockWebSocketServer(InetSocketAddress address) {
         super(address);
@@ -25,6 +29,7 @@ public class MockWebSocketServer extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, String message) {
         System.out.println("Received message: " + message);
+        receivedMessages.add(message);
     }
 
     @Override
@@ -35,5 +40,9 @@ public class MockWebSocketServer extends WebSocketServer {
     @Override
     public void onStart() {
         System.out.println("WebSocket server started successfully!");
+    }
+
+    public List<String> getReceivedMessages() {
+        return receivedMessages;
     }
 }

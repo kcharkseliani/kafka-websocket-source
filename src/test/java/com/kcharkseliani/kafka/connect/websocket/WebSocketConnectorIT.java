@@ -13,6 +13,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.kafka.clients.admin.*;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -104,6 +108,81 @@ public class WebSocketConnectorIT {
         boolean connected = waitForWebSocketConnection(5_000);
 
         assertTrue(connected, "Connector should establish a WebSocket connection to the server");
+    }
+
+    @Test
+    void testWebSocketSubscriptionMessageSent() throws Exception {
+        // Step 1: Deploy the WebSocket Kafka Connector
+        deployWebSocketConnector();
+
+        // Step 2: Wait for connector to establish WebSocket connection
+        boolean connected = waitForWebSocketConnection(5_000);
+        assertTrue(connected, "Connector should establish a WebSocket connection to the mock server");
+
+        // Step 3: Wait a short time to allow the connector to send the subscription message
+        Thread.sleep(1_000);
+
+        // Step 4: Retrieve the messages received by the mock server
+        List<String> receivedMessages = websocketServer.getReceivedMessages();
+
+        // Step 5: Verify that a subscription message was received
+        boolean subscriptionReceived = receivedMessages.stream()
+            .anyMatch(msg -> msg.contains("\"method\": \"subscribe\""));
+
+        assertTrue(subscriptionReceived, "Expected subscription message was not received by the WebSocket server.");
+    }
+
+    @Test
+    void testWebSocketMessageEndToEnd() throws Exception {
+        // Step 1: Deploy the WebSocket Kafka Connector
+        deployWebSocketConnector();
+
+        // Step 2: Wait for the connector to establish a WebSocket connection
+        boolean connected = waitForWebSocketConnection(5_000);
+        assertTrue(connected, "Connector should establish a WebSocket connection to the mock server");
+
+        // Step 3: Send a test WebSocket message through the mock WebSocket server
+        String testMessage = "{\"type\": \"trade\", \"price\": \"50000\"}";
+        websocketServer.broadcast(testMessage);
+
+        // Step 4: Configure Kafka consumer properties
+        Properties consumerProps = new Properties();
+        consumerProps.put("bootstrap.servers", kafka.getBootstrapServers()); // Connect to the Kafka container
+        consumerProps.put("group.id", "test-consumer-group"); // Group ID for isolation
+        consumerProps.put("key.deserializer", StringDeserializer.class.getName()); // Key deserializer
+        consumerProps.put("value.deserializer", StringDeserializer.class.getName()); // Value deserializer
+        consumerProps.put("auto.offset.reset", "earliest"); // Make sure we read messages from the beginning
+
+        // Step 5: Create a Kafka consumer to consume from the 'trades' topic
+        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps)) {
+            consumer.subscribe(List.of(TOPIC)); // Subscribe to the topic produced by the connector
+
+            boolean messageReceived = false;
+            long timeoutMillis = 5000; // How long to wait for the message
+            long start = System.currentTimeMillis();
+
+            // Step 6: Poll Kafka for new messages until timeout expires
+            while (System.currentTimeMillis() - start < timeoutMillis) {
+                ConsumerRecords<String, String> records = consumer.poll(java.time.Duration.ofMillis(500)); // poll every 500ms
+
+                for (ConsumerRecord<String, String> record : records) {
+                    System.out.println("Received message from Kafka: " + record.value());
+
+                    // Step 7: Check if the message matches what we broadcast
+                    if (record.value().contains("\"price\": \"50000\"")) {
+                        messageReceived = true;
+                        break;
+                    }
+                }
+
+                if (messageReceived) {
+                    break; // Stop polling once we found the expected message
+                }
+            }
+
+            // Step 8: Assert that we successfully received the WebSocket message in Kafka
+            assertTrue(messageReceived, "Expected WebSocket message was not found in Kafka topic 'trades'.");
+        }
     }
 
     @AfterEach
