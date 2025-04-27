@@ -30,16 +30,36 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.testcontainers.containers.Network;
 
+/**
+ * Integration tests for the WebSocket Kafka Source Connector 
+ * that use Testcontainers to spin up Kafka and Kafka Connect.
+ */
 public class WebSocketConnectorIT {
 
+    /** Kafka container instance for testing. */
     private KafkaContainer kafka;
+
+    /** Kafka Connect container instance as a generic container for testing. */
     private GenericContainer<?> connect;
+
+    /** Shared Docker network for containers. */
     private Network network;
 
+    /** Mock WebSocket server to simulate WebSocket connections and messages. */
     private MockWebSocketServer websocketServer;
-    private static final int WEBSOCKET_PORT = 9001;
-    private static final String TOPIC = "trades";
 
+    /** Port where the mock WebSocket server will listen. */
+    private static final int WEBSOCKET_PORT = 9001;
+
+    /** Kafka topic where the connector will publish messages. */
+    private static final String TOPIC = "test-topic";
+
+    /**
+     * Starts Kafka, Kafka Connect, and the mock WebSocket server
+     * before each test case.
+     *
+     * @throws Exception if container startup fails
+     */
     @BeforeEach
     void setup() throws Exception {
         System.out.println("Testcontainers Docker available: " + DockerClientFactory.instance().isDockerAvailable());
@@ -95,11 +115,22 @@ public class WebSocketConnectorIT {
         Thread.sleep(5_000);  
     }
 
+    /**
+     * Simple smoke test to deploy the WebSocket source connector.
+     *
+     * @throws Exception if deployment fails
+     */
     @Test
     void testConnectorWorks() throws Exception {
         deployWebSocketConnector();
     }   
 
+    /**
+     * Verifies that the connector successfully establishes
+     * a WebSocket connection to the mock server.
+     *
+     * @throws Exception if connection setup or validation fails
+     */
     @Test
     void testWebSocketConnection() throws Exception {
         deployWebSocketConnector();
@@ -110,6 +141,12 @@ public class WebSocketConnectorIT {
         assertTrue(connected, "Connector should establish a WebSocket connection to the server");
     }
 
+    /**
+     * Verifies that the WebSocket subscription message
+     * is sent by the connector to the server after connection.
+     *
+     * @throws Exception if deployment or validation fails
+     */
     @Test
     void testWebSocketSubscriptionMessageSent() throws Exception {
         // Step 1: Deploy the WebSocket Kafka Connector
@@ -127,11 +164,17 @@ public class WebSocketConnectorIT {
 
         // Step 5: Verify that a subscription message was received
         boolean subscriptionReceived = receivedMessages.stream()
-            .anyMatch(msg -> msg.contains("\"method\": \"subscribe\""));
+            .anyMatch(msg -> msg.contains("\"message\": \"subscribe\""));
 
         assertTrue(subscriptionReceived, "Expected subscription message was not received by the WebSocket server.");
     }
 
+    /**
+     * Full end-to-end test to verify that a WebSocket message
+     * received by the connector is published into the Kafka topic.
+     *
+     * @throws Exception if message publishing or validation fails
+     */
     @Test
     void testWebSocketMessageEndToEnd() throws Exception {
         // Step 1: Deploy the WebSocket Kafka Connector
@@ -142,7 +185,7 @@ public class WebSocketConnectorIT {
         assertTrue(connected, "Connector should establish a WebSocket connection to the mock server");
 
         // Step 3: Send a test WebSocket message through the mock WebSocket server
-        String testMessage = "{\"type\": \"trade\", \"price\": \"50000\"}";
+        String testMessage = "{\"data\": \"test\"}";
         websocketServer.broadcast(testMessage);
 
         // Step 4: Configure Kafka consumer properties
@@ -153,7 +196,7 @@ public class WebSocketConnectorIT {
         consumerProps.put("value.deserializer", StringDeserializer.class.getName()); // Value deserializer
         consumerProps.put("auto.offset.reset", "earliest"); // Make sure we read messages from the beginning
 
-        // Step 5: Create a Kafka consumer to consume from the 'trades' topic
+        // Step 5: Create a Kafka consumer to consume from the 'test-topic' topic
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps)) {
             consumer.subscribe(List.of(TOPIC)); // Subscribe to the topic produced by the connector
 
@@ -169,7 +212,7 @@ public class WebSocketConnectorIT {
                     System.out.println("Received message from Kafka: " + record.value());
 
                     // Step 7: Check if the message matches what we broadcast
-                    if (record.value().contains("\"price\": \"50000\"")) {
+                    if (record.value().contains("\"data\": \"test\"")) {
                         messageReceived = true;
                         break;
                     }
@@ -181,10 +224,15 @@ public class WebSocketConnectorIT {
             }
 
             // Step 8: Assert that we successfully received the WebSocket message in Kafka
-            assertTrue(messageReceived, "Expected WebSocket message was not found in Kafka topic 'trades'.");
+            assertTrue(messageReceived, "Expected WebSocket message was not found in Kafka topic 'test-topic'.");
         }
     }
 
+    /**
+     * Stops all containers and the mock WebSocket server after each test.
+     *
+     * @throws InterruptedException if container shutdown is interrupted
+     */
     @AfterEach
     void teardown() throws InterruptedException {
         if (websocketServer != null) {
@@ -201,6 +249,12 @@ public class WebSocketConnectorIT {
         }
     }
 
+    /**
+     * Creates the internal Kafka Connect topics: connect-offsets, connect-configs, and connect-status.
+     *
+     * @param bootstrapServers address of the Kafka bootstrap servers
+     * @throws Exception if topic creation fails
+     */
     private void createKafkaConnectInternalTopics(String bootstrapServers) throws Exception {
         Properties props = new Properties();
         props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -216,6 +270,11 @@ public class WebSocketConnectorIT {
         }
     }
 
+    /**
+     * Deploys the WebSocket source connector to the running Kafka Connect instance.
+     *
+     * @throws Exception if the HTTP request to deploy the connector fails
+     */
     private void deployWebSocketConnector() throws Exception {
         String connectUrl = "http://" + connect.getHost() + ":" + connect.getMappedPort(8083);
 
@@ -226,7 +285,7 @@ public class WebSocketConnectorIT {
             "    \"tasks.max\": \"1\",\n" +
             "    \"websocket.url\": \"ws://host.testcontainers.internal:" + WEBSOCKET_PORT + "\",\n" +
             "    \"topic\": \"" + TOPIC + "\",\n" +
-            "    \"websocket.subscription.message\": \"{ \\\"method\\\": \\\"subscribe\\\", \\\"params\\\": { \\\"channel\\\": \\\"trade\\\", \\\"symbol\\\": [\\\"BTC/USD\\\"], \\\"snapshot\\\": false } }\"\n" +
+            "    \"websocket.subscription.message\": \"{ \\\"message\\\": \\\"subscribe\\\" }\"\n" +
             "  }\n" +
             "}";
 
@@ -241,6 +300,14 @@ public class WebSocketConnectorIT {
         assertEquals(201, response.statusCode(), "Connector creation failed: " + response.body());
     }   
 
+    /**
+     * Waits until the WebSocket server detects at least one client connection
+     * or until the timeout expires.
+     *
+     * @param timeoutMillis maximum time in milliseconds to wait
+     * @return true if a connection is established, false if timeout occurs
+     * @throws InterruptedException if thread sleep is interrupted
+     */
     private boolean waitForWebSocketConnection(long timeoutMillis) throws InterruptedException {
         long start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < timeoutMillis) {
