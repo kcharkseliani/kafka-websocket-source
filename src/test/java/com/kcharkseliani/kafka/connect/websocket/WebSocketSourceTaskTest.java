@@ -10,7 +10,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.io.InputStream;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -20,22 +19,38 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Integration tests for the {@link WebSocketSourceTask} class,
+ * verifying WebSocket behavior and correct Kafka record production.
+ */
 public class WebSocketSourceTaskTest {
 
+    /** Instance of the source task under test. */
     private WebSocketSourceTask task;
     
+    /** Mock factory used to create WebSocket clients. */
     @Mock
     private WebSocketClientFactory clientFactory;
     
+    /** Mock WebSocket client used in tests. */
     @Mock
     private WebSocketClient mockClient;
     
+    /** Kafka topic that would be used for produced records. */
     private final String kafkaTopic = "test-topic";
+
+    /** Mock WebSocket server URL. */
     private final String websocketUrl = "ws://example.com";
+
+    /** Subscription message to send after WebSocket connection. */
     private final String subscriptionMessage = "{\"action\": \"subscribe\", \"channel\": \"test-stream\"}";
 
+     /** Properties loaded from config.properties, mainly for version testing. */
     private Properties properties;
 
+     /**
+     * Initializes mocks and loads properties before each test.
+     */
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -53,6 +68,12 @@ public class WebSocketSourceTaskTest {
         }
     }
 
+    /**
+     * Verifies that when the task starts, it sends a subscription message
+     * and connects using the created WebSocket client.
+     *
+     * @throws Exception if WebSocket connection setup fails
+     */
     @Test
     public void testStart_SendsSubscriptionMessageOnOpen() throws Exception {
         // Prepare props with topic, websocket URL, and subscription message
@@ -77,6 +98,12 @@ public class WebSocketSourceTaskTest {
         verify(mockClient).connect();
     }
 
+    /**
+     * Verifies that when a WebSocket message is received, the task correctly
+     * converts it into a {@link SourceRecord} queued for Kafka.
+     *
+     * @throws Exception if starting the task or handling messages fails
+     */
     @Test
     public void testOnMessage_AddsMessageToQueueAsSourceRecord() throws Exception {
         // Set up props and initialize task
@@ -113,6 +140,10 @@ public class WebSocketSourceTaskTest {
         assertEquals(incomingMessage, record.value());
     }
 
+    /**
+     * Verifies that calling {@link WebSocketSourceTask#stop()} closes
+     * the underlying WebSocket connection.
+     */
     @Test
     public void testStop_ClosesWebSocketClient() {
         // Set up props and initialize task
@@ -134,6 +165,10 @@ public class WebSocketSourceTaskTest {
         verify(mockClient).close();
     }
 
+    /**
+     * Verifies that the {@link WebSocketSourceTask#version()} method
+     * returns the correct version string from the filtered config.properties file.
+     */
     @Test
     public void testVersion_ShouldReturnCorrectVersion() {
         // Arrange      
