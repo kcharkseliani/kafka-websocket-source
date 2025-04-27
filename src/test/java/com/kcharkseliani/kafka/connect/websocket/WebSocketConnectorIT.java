@@ -85,7 +85,7 @@ public class WebSocketConnectorIT {
 
         connect.start();   
 
-        websocketServer = new MockWebSocketServer(new InetSocketAddress("0.0.0.0", WEBSOCKET_PORT));
+        websocketServer = new MockWebSocketServer(new InetSocketAddress("localhost", WEBSOCKET_PORT));
         websocketServer.start();
 
         Thread.sleep(5_000);  
