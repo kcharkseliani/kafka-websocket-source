@@ -12,14 +12,30 @@ import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Integration tests for {@link WebSocketSourceConnector},
+ * validating connector configuration handling, task creation, and version retrieval logic.
+ */
 class WebSocketSourceConnectorTest {
 
+    /** Instance of the source connector under test. */
     private WebSocketSourceConnector connector;
+    
+    /** Example webSocket URL used for connecting during tests. */
     private final String websocketUrl = "ws://example.com/socket";
+
+    /** Kafka topic name that would be used for publishing WebSocket messages. */
     private final String kafkaTopic = "test-topic";
+
+    /** Subscription message that would be sent when connecting to the WebSocket server. */
     private final String subscriptionMessage = "{\"type\":\"subscribe\"}";
+
+    /** Properties loaded from {@code config.properties} for version verification. */
     private Properties properties;
 
+    /**
+     * Initializes a new instance of {@link WebSocketSourceConnector} and loads application properties.
+     */
     @BeforeEach
     void setUp() {
         connector = new WebSocketSourceConnector();
@@ -35,6 +51,10 @@ class WebSocketSourceConnectorTest {
         }
     }
 
+    /**
+     * Verifies that {@link WebSocketSourceConnector#start(Map)} correctly sets internal configuration
+     * when provided with valid properties.
+     */
     @Test
     void testStart_WithValidProperties_ShouldSetConfig() {
         // Arrange
@@ -61,6 +81,10 @@ class WebSocketSourceConnectorTest {
         }
     }
 
+    /**
+     * Verifies that {@link WebSocketSourceConnector#start(Map)} throws an exception
+     * when the required 'websocket.url' property is missing.
+     */
     @Test
     void testStart_MissingWebSocketUrl_ShouldThrowException() {
         // Arrange
@@ -72,6 +96,10 @@ class WebSocketSourceConnectorTest {
         assertEquals("Missing required configuration: websocket.url", exception.getMessage());
     }
 
+    /**
+     * Verifies that {@link WebSocketSourceConnector#start(Map)} throws an exception
+     * when the required 'topic' property is missing.
+     */
     @Test
     void testStart_MissingTopic_ShouldThrowException() {
         // Arrange
@@ -83,6 +111,10 @@ class WebSocketSourceConnectorTest {
         assertEquals("Missing required configuration: topic", exception.getMessage());
     }
 
+    /**
+     * Verifies that {@link WebSocketSourceConnector#taskConfigs(int)} correctly generates
+     * a single task configuration when one task is requested.
+     */
     @Test
     void testTaskConfigs_SingleTaskConfiguration() {
         // Arrange
@@ -104,12 +136,19 @@ class WebSocketSourceConnectorTest {
         assertEquals(subscriptionMessage, config.get("websocket.subscription.message"));
     }
 
+    /**
+     * Verifies that {@link WebSocketSourceConnector#config()} does not throw any exceptions.
+     */
     @Test
     void testConfigDoesNotThrowException() {
         // Act & Assert: Ensure config() does not throw any exceptions when called
         assertDoesNotThrow(connector::config);
     }
 
+    /**
+     * Verifies that {@link WebSocketSourceConnector#version()} returns the expected version
+     * from the {@code config.properties} file or "unknown-version" as fallback.
+     */
     @Test
     void testVersion_ShouldReturnCorrectVersion() {
         // Arrange
