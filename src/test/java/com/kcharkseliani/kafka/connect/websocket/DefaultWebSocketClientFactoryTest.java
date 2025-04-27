@@ -9,15 +9,28 @@ import java.net.URI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/**
+ * Unit tests for {@link DefaultWebSocketClientFactory}, verifying WebSocket client creation behavior.
+ */
 class DefaultWebSocketClientFactoryTest {
 
+    /** Instance of the client factory under test. */
     private DefaultWebSocketClientFactory clientFactory;
 
+    /**
+     * Initializes the {@code DefaultWebSocketClientFactory} instance before each test.
+     */
     @BeforeEach
     void setUp() {
         clientFactory = new DefaultWebSocketClientFactory();
     }
 
+    /**
+     * Tests that {@link DefaultWebSocketClientFactory#createClient(URI, String, MessageHandler)}
+     * returns a {@link WebSocketClient} initialized with the provided URI.
+     *
+     * @throws Exception if URI creation or WebSocket client setup fails
+     */
     @Test
     void testCreateClient_WithValidParameters_ShouldReturnWebSocketClientWithUri() throws Exception {
         // Arrange
