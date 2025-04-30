@@ -18,6 +18,15 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    services:
+      docker:
+        image: docker:28.1.1
+
     steps:
     # Step 1: Check out the repository
     - name: Check out repository

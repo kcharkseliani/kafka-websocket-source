@@ -119,7 +119,9 @@
         <executions>
           <execution>
             <goals>
+              <!-- Executes integration tests that match patterns like *IT.java -->
               <goal>integration-test</goal>
+              <!-- Checks the results of the integration test phase -->
               <goal>verify</goal>
             </goals>
           </execution>
