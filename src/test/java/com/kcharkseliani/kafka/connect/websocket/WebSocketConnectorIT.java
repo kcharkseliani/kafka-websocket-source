@@ -18,13 +18,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 
-import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
