@@ -77,8 +77,8 @@ jobs:
       run: mvn versions:set -DnewVersion=${{ steps.gitversion.outputs.semVer }}
 
     # Step 7: Build the project
-    - name: Build the project (Skip tests)
-      run: mvn clean package -DskipTests
+    - name: Build the project
+      run: mvn clean package
 
     # Step 8: Run integration tests (fails if Docker is not available or tests fail)
     - name: Run integration tests
