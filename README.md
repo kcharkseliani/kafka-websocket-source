@@ -77,13 +77,19 @@ This project uses:
 - [Java-WebSocket](https://github.com/TooTallNate/Java-WebSocket)
 - Testcontainers for integration testing
 
-### Run Tests
+### Run Full Build and Tests
 
 ```bash
 mvn clean verify
 ```
 
-Integration tests spin up Kafka and Kafka Connect containers and a local WebSocket server to validate full end-to-end behavior.
+This runs a full build and executes all tests, including integration tests that use Testcontainers to spin up Kafka, Kafka Connect, and a local WebSocket server to validate full end-to-end behavior.
+
+To run integration tests separately:
+```bash
+mvn failsafe:integration-test failsafe:verify
+```
+> **Note:** Docker must be available and running for integration tests to work.
 
 ### Project Structure
 
