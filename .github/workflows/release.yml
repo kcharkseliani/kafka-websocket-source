@@ -80,7 +80,11 @@ jobs:
     - name: Build the project (Skip tests)
       run: mvn clean package -DskipTests
 
-    # Step 8: Tag the commit with the version
+    # Step 8: Run integration tests (fails if Docker is not available or tests fail)
+    - name: Run integration tests
+      run: mvn failsafe:integration-test failsafe:verify
+
+    # Step 9: Tag the commit with the version
     - name: Tag the commit with version
       if: startsWith(github.ref, 'refs/heads/release/')
       run: |
@@ -92,7 +96,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
-    # Step 9: Upload build artifact as a release
+    # Step 10: Upload build artifact as a release
     - name: Create a GitHub release
       id: create_release
       uses: actions/create-release@v1
@@ -104,7 +108,7 @@ jobs:
         draft: true
         prerelease: ${{ github.ref != 'refs/heads/main' }}
 
-    # Step 10: Upload .jar to release
+    # Step 11: Upload .jar to release
     - name: Upload .jar to release
       uses: actions/upload-release-asset@v1
       env:
