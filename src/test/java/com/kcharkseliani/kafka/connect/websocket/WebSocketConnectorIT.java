@@ -58,11 +58,17 @@ public class WebSocketConnectorIT {
      * Starts Kafka, Kafka Connect, and the mock WebSocket server
      * before each test case.
      *
-     * @throws Exception if container startup fails
+     * @throws Exception if container startup fails or if docker is not available
      */
     @BeforeEach
     void setup() throws Exception {
-        System.out.println("Testcontainers Docker available: " + DockerClientFactory.instance().isDockerAvailable());
+        
+        boolean dockerAvailable = DockerClientFactory.instance().isDockerAvailable();
+        System.out.println("Testcontainers Docker available: " + dockerAvailable);
+
+        if (!dockerAvailable) {
+            throw new IllegalStateException("Docker is not available. Integration tests require Docker.");
+        }
 
         network = Network.newNetwork();
         
