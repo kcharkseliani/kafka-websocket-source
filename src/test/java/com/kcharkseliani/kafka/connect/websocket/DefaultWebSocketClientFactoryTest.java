@@ -9,15 +9,28 @@ import java.net.URI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/**
+ * Unit tests for {@link DefaultWebSocketClientFactory}, verifying WebSocket client creation behavior.
+ */
 class DefaultWebSocketClientFactoryTest {
 
+    /** Instance of the client factory under test. */
     private DefaultWebSocketClientFactory clientFactory;
 
+    /**
+     * Initializes the {@code DefaultWebSocketClientFactory} instance before each test.
+     */
     @BeforeEach
     void setUp() {
         clientFactory = new DefaultWebSocketClientFactory();
     }
 
+    /**
+     * Tests that {@link DefaultWebSocketClientFactory#createClient(URI, String, MessageHandler)}
+     * returns a {@link WebSocketClient} initialized with the provided URI.
+     *
+     * @throws Exception if URI creation or WebSocket client setup fails
+     */
     @Test
     void testCreateClient_WithValidParameters_ShouldReturnWebSocketClientWithUri() throws Exception {
         // Arrange
@@ -31,9 +44,9 @@ class DefaultWebSocketClientFactoryTest {
         WebSocketClient client = clientFactory.createClient(testUri, subscriptionMessage, messageHandler);
 
         // Assert
-        assertNotNull(client);
+        assertNotNull(client, "Expected WebSocketClient to be created, but it is null instead.");
         // Use reflection to access the private 'uri' field of the WebSocketClient
-        assertEquals(testUri, client.getURI(), "WebSocketClient URI should match the provided URI");
+        assertEquals(testUri, client.getURI(), "WebSocketClient URI should match the provided URI.");
     }   
 }
 

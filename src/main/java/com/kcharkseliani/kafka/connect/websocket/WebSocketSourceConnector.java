@@ -11,12 +11,20 @@ import java.util.Map;
 import java.io.InputStream;
 import java.util.Properties;
 
+/**
+ * A Kafka Connect {@link SourceConnector} implementation that streams messages from a WebSocket server into a Kafka topic.
+ * 
+ * This connector supports an optional subscription message that can be sent after establishing a WebSocket connection.
+ */
 public class WebSocketSourceConnector extends SourceConnector {
 
+    /** Configuration properties provided to the connector. */
     private Map<String, String> configProperties;
 
+     /** Properties loaded from the internal config.properties file (e.g., for version information). */
     private static final Properties properties = new Properties();
 
+    /** Defines the configuration options supported by this connector. */
     private static final ConfigDef CONFIG_DEF = new ConfigDef()
         .define(
             "websocket.url", 
@@ -38,6 +46,7 @@ public class WebSocketSourceConnector extends SourceConnector {
             "Optional subscription message to send after connecting to the WebSocket."
         );
     
+    // Static initializer to load the config.properties file at class loading time
     static {
         // Load config.properties at class initialization
         try (InputStream input = WebSocketSourceConnector.class
@@ -53,11 +62,21 @@ public class WebSocketSourceConnector extends SourceConnector {
         }
     }
 
+    /**
+     * Returns the version of the connector, loaded from config.properties.
+     * 
+     * @return the connector version or "unknown-version" if not available
+     */
     @Override
     public String version() {
         return properties.getProperty("app.version", "unknown-version");
     }
 
+    /**
+     * Starts the connector and validates the configuration properties.
+     * 
+     * @param props configuration key-value pairs provided when the connector is instantiated
+     */
     @Override
     public void start(Map<String, String> props) {
         // Retrieve essential configurations
@@ -76,11 +95,22 @@ public class WebSocketSourceConnector extends SourceConnector {
         this.configProperties = props;
     }
 
+    /**
+     * Returns the class that should be instantiated for running tasks.
+     * 
+     * @return the {@link WebSocketSourceTask} class
+     */
     @Override
     public Class<? extends Task> taskClass() {
         return WebSocketSourceTask.class;
     }
 
+    /**
+     * Returns a list of configurations for each task based on the connector configuration.
+     * 
+     * @param maxTasks maximum number of tasks to generate configurations for
+     * @return a list of task configurations
+     */
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
         // Create a single task configuration that reuses the connector's properties
@@ -92,11 +122,20 @@ public class WebSocketSourceConnector extends SourceConnector {
         return configs;
     }
 
+    /**
+     * Stops the connector.
+     * This implementation does not allocate any resources that need explicit cleanup.
+     */
     @Override
     public void stop() {
         // Clean up resources if needed
     }
 
+    /**
+     * Returns the {@link ConfigDef} that defines the configuration for this connector.
+     * 
+     * @return the configuration definition
+     */
     public ConfigDef config() {
         return CONFIG_DEF;
     }
