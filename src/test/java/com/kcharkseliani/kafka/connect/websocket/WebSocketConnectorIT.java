@@ -61,7 +61,7 @@ public class WebSocketConnectorIT {
      * @throws Exception if container startup fails or if docker is not available
      */
     @BeforeEach
-    void setup() throws Exception {
+    void setUp() throws Exception {
         
         boolean dockerAvailable = DockerClientFactory.instance().isDockerAvailable();
         System.out.println("Testcontainers Docker available: " + dockerAvailable);
@@ -127,7 +127,7 @@ public class WebSocketConnectorIT {
      * @throws Exception if deployment fails
      */
     @Test
-    void testConnectorWorks() throws Exception {
+    void testConnectorDeployment_ShouldSucceed() throws Exception {
         deployWebSocketConnector();
     }   
 
@@ -138,7 +138,7 @@ public class WebSocketConnectorIT {
      * @throws Exception if connection setup or validation fails
      */
     @Test
-    void testWebSocketConnection() throws Exception {
+    void testConnectorDeployment_ShouldEstablishConnectionToServer() throws Exception {
         deployWebSocketConnector();
 
         // Wait up to 5 seconds for connector to establish WebSocket connection
@@ -154,7 +154,7 @@ public class WebSocketConnectorIT {
      * @throws Exception if deployment or validation fails
      */
     @Test
-    void testWebSocketSubscriptionMessageSent() throws Exception {
+    void testConnectorDeployment_ShouldSendSubscriptionMessageToServer() throws Exception {
         // Step 1: Deploy the WebSocket Kafka Connector
         deployWebSocketConnector();
 
@@ -182,7 +182,7 @@ public class WebSocketConnectorIT {
      * @throws Exception if message publishing or validation fails
      */
     @Test
-    void testWebSocketMessageEndToEnd() throws Exception {
+    void testWebSocketMessage_ShouldBePublishedToKafkaTopic() throws Exception {
         // Step 1: Deploy the WebSocket Kafka Connector
         deployWebSocketConnector();
 
