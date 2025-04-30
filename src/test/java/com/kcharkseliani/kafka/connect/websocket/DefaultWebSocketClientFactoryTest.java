@@ -44,9 +44,9 @@ class DefaultWebSocketClientFactoryTest {
         WebSocketClient client = clientFactory.createClient(testUri, subscriptionMessage, messageHandler);
 
         // Assert
-        assertNotNull(client);
+        assertNotNull(client, "Expected WebSocketClient to be created, but it is null instead.");
         // Use reflection to access the private 'uri' field of the WebSocketClient
-        assertEquals(testUri, client.getURI(), "WebSocketClient URI should match the provided URI");
+        assertEquals(testUri, client.getURI(), "WebSocketClient URI should match the provided URI.");
     }   
 }
 

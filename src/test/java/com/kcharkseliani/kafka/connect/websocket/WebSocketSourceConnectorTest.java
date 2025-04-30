@@ -92,8 +92,16 @@ class WebSocketSourceConnectorTest {
         props.put("topic", kafkaTopic);
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> connector.start(props));
-        assertEquals("Missing required configuration: websocket.url", exception.getMessage());
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> connector.start(props),
+            "Expected IllegalArgumentException when 'websocket.url' is missing"
+        );
+        assertEquals(
+            "Missing required configuration: websocket.url",
+            exception.getMessage(),
+            "Exception message should indicate the missing 'websocket.url' property"
+        );
     }
 
     /**
@@ -107,8 +115,16 @@ class WebSocketSourceConnectorTest {
         props.put("websocket.url", websocketUrl);
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> connector.start(props));
-        assertEquals("Missing required configuration: topic", exception.getMessage());
+        IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> connector.start(props),
+            "Expected IllegalArgumentException when 'topic' is missing"
+        );
+        assertEquals(
+            "Missing required configuration: topic",
+            exception.getMessage(),
+            "Exception message should indicate the missing 'topic' property"
+        );
     }
 
     /**
@@ -129,11 +145,15 @@ class WebSocketSourceConnectorTest {
         List<Map<String, String>> taskConfigs = connector.taskConfigs(1);
 
         // Assert
-        assertEquals(1, taskConfigs.size());
+        assertEquals(1, taskConfigs.size(), 
+            "Expected exactly one task config to be returned, but got " + taskConfigs.size());
         Map<String, String> config = taskConfigs.get(0);
-        assertEquals(websocketUrl, config.get("websocket.url"));
-        assertEquals(kafkaTopic, config.get("topic"));
-        assertEquals(subscriptionMessage, config.get("websocket.subscription.message"));
+        assertEquals(websocketUrl, config.get("websocket.url"), 
+            "WebSocket URL in task config should match the original value.");
+        assertEquals(kafkaTopic, config.get("topic"), 
+            "Kafka topic in task config should match the original value.");
+        assertEquals(subscriptionMessage, config.get("websocket.subscription.message"), 
+            "Subscription message in task config should match the original value.");
     }
 
     /**
@@ -142,7 +162,8 @@ class WebSocketSourceConnectorTest {
     @Test
     void testConfigDoesNotThrowException() {
         // Act & Assert: Ensure config() does not throw any exceptions when called
-        assertDoesNotThrow(connector::config);
+        assertDoesNotThrow(connector::config, 
+            "Calling config() to return connector configuration should not throw an exception.");
     }
 
     /**

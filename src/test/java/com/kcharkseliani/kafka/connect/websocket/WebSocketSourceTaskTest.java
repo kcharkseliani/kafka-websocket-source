@@ -134,10 +134,11 @@ public class WebSocketSourceTaskTest {
         List<SourceRecord> records = task.poll();
 
         // Verify that the record was correctly added to the queue
-        assertEquals(1, records.size());
+        assertEquals(1, records.size(), 
+            "Expected one SourceRecord to be returned from the poll after handling a message, but got " + records.size());
         SourceRecord record = records.get(0);
-        assertEquals(kafkaTopic, record.topic());
-        assertEquals(incomingMessage, record.value());
+        assertEquals(kafkaTopic, record.topic(), "The SourceRecord topic should match the configured Kafka topic.");
+        assertEquals(incomingMessage, record.value(), "The SourceRecord value should match the WebSocket message.");
     }
 
     /**
