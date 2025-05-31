@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Konstantin Charkseliani
+
 package com.kcharkseliani.kafka.connect.websocket.util;
 
 import org.java_websocket.server.WebSocketServer;

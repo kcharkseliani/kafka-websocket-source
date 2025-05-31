@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 Konstantin Charkseliani
+
 package com.kcharkseliani.kafka.connect.websocket;
 
 import org.apache.kafka.connect.source.SourceRecord;
