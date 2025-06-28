@@ -17,7 +17,15 @@ import java.util.Properties;
 /**
  * A Kafka Connect {@link SourceConnector} implementation that streams messages from a WebSocket server into a Kafka topic.
  * 
- * This connector supports an optional subscription message that can be sent after establishing a WebSocket connection.
+ * This connector supports:
+ * <ul>
+ *   <li>An optional subscription message sent immediately after establishing the WebSocket connection</li>
+ *   <li>Periodic sending of configurable application-level ping messages to keep the connection alive</li>
+ *   <li>Filtering out of application-level pong messages using a configurable regex pattern</li>
+ * </ul>
+ * 
+ * Incoming WebSocket messages (excluding matched pong responses) are forwarded to Kafka as
+ * {@link org.apache.kafka.connect.source.SourceRecord} entries.
  */
 public class WebSocketSourceConnector extends SourceConnector {
 

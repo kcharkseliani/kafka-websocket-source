@@ -17,8 +17,15 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * A Kafka Connect {@link SourceTask} implementation that receives messages from a WebSocket server
- * and produces them to a Kafka topic as {@link SourceRecord} entries.
+ * A Kafka Connect {@link SourceTask} implementation that receives messages from a WebSocket server and
+ * produces those that do not match the pong pattern to a Kafka topic as {@link SourceRecord} entries.
+ * 
+ * It supports:
+ * <ul>
+ *   <li>An optional subscription message sent immediately after establishing the WebSocket connection</li>
+ *   <li>Periodic sending of configurable application-level ping messages to keep the connection alive</li>
+ *   <li>Filtering out of application-level pong messages using a configurable regex pattern</li>
+ * </ul>
  */
 public class WebSocketSourceTask extends SourceTask {
 
