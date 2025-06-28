@@ -44,9 +44,31 @@ public class WebSocketSourceConnector extends SourceConnector {
         .define(
             "websocket.subscription.message", 
             ConfigDef.Type.STRING, 
-            "", // Default to an empty string if not provided
+            "",
             ConfigDef.Importance.LOW, 
             "Optional subscription message to send after connecting to the WebSocket."
+        )
+        .define(
+            "websocket.ping.message",
+            ConfigDef.Type.STRING,
+            "",
+            ConfigDef.Importance.LOW,
+            "Optional ping message to send periodically to keep the WebSocket connection alive."
+        )
+        .define(
+            "websocket.ping.interval.ms",
+            ConfigDef.Type.INT,
+            20000,
+            ConfigDef.Importance.LOW,
+            "Interval in milliseconds between each ping message."
+        )
+        .define(
+            "websocket.pong.pattern",
+            ConfigDef.Type.STRING,
+            "",
+            ConfigDef.Importance.LOW,
+            "Regex pattern to detect pong responses in incoming WebSocket messages. " +
+            "If not provided, pong responses will be sent alongside other messages."
         );
     
     // Static initializer to load the config.properties file at class loading time

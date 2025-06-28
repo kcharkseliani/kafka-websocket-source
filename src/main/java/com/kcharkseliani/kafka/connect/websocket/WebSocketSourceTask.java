@@ -72,15 +72,31 @@ public class WebSocketSourceTask extends SourceTask {
     @Override
     public void start(Map<String, String> props) {
         kafkaTopic = props.get("topic");
-        String subscriptionMessage = props.get("websocket.subscription.message"); // Retrieve subscription message
+
+        String websocketUrl = props.get("websocket.url");
+        String subscriptionMessage = props.get("websocket.subscription.message");
+        String pingMessage = props.get("websocket.ping.message");
+        int pingIntervalMs = Integer.parseInt(props.get("websocket.ping.interval.ms"));
+        String pongPattern = props.get("websocket.pong.pattern");
 
         // Pass the subscription message to the client
-        client = clientFactory.createClient(URI.create(props.get("websocket.url")), subscriptionMessage, message -> {
-            SourceRecord record = new SourceRecord(
-                null, null, kafkaTopic, Schema.STRING_SCHEMA, message
-            );
-            recordsQueue.add(record);
-        });       
+        client = clientFactory.createClient(
+            URI.create(websocketUrl),
+            subscriptionMessage,
+            pingMessage,
+            pingIntervalMs,
+            pongPattern,
+            message -> {
+                SourceRecord record = new SourceRecord(
+                    null, 
+                    null, 
+                    kafkaTopic, 
+                    Schema.STRING_SCHEMA, 
+                    message
+                );
+                recordsQueue.add(record);
+            }
+        );      
 
         client.connect();
     }
