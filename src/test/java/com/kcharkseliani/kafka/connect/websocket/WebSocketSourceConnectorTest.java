@@ -33,6 +33,15 @@ class WebSocketSourceConnectorTest {
     /** Subscription message that would be sent when connecting to the WebSocket server. */
     private final String subscriptionMessage = "{\"type\":\"subscribe\"}";
 
+        /** Application-level ping message to be sent periodically to the websocket server */
+    private final String pingMessage = "{\"message\":\"ping\"}";
+
+    /** Frequency with which to send the ping message (ms) */
+    private final int pingIntervalMs = 20000;
+
+    /** Pattern of the pong message to match so that pong messages can be excluded from being published */
+    private final String pongPattern = "\"message\"\\s*:\\s*\"pong\"";
+
     /** Properties loaded from {@code config.properties} for version verification. */
     private Properties properties;
 
@@ -65,6 +74,9 @@ class WebSocketSourceConnectorTest {
         props.put("websocket.url", websocketUrl);
         props.put("topic", kafkaTopic);
         props.put("websocket.subscription.message", subscriptionMessage);
+        props.put("websocket.ping.message", pingMessage);
+        props.put("websocket.ping.interval.ms", String.valueOf(pingIntervalMs));
+        props.put("websocket.pong.pattern", pongPattern);
 
         // Act
         connector.start(props);
@@ -141,6 +153,9 @@ class WebSocketSourceConnectorTest {
         props.put("websocket.url", websocketUrl);
         props.put("topic", kafkaTopic);
         props.put("websocket.subscription.message", subscriptionMessage);
+        props.put("websocket.ping.message", pingMessage);
+        props.put("websocket.ping.interval.ms", String.valueOf(pingIntervalMs));
+        props.put("websocket.pong.pattern", pongPattern);
         
         connector.start(props);
         
@@ -150,13 +165,26 @@ class WebSocketSourceConnectorTest {
         // Assert
         assertEquals(1, taskConfigs.size(), 
             "Expected exactly one task config to be returned, but got " + taskConfigs.size());
+
         Map<String, String> config = taskConfigs.get(0);
+
         assertEquals(websocketUrl, config.get("websocket.url"), 
             "WebSocket URL in task config should match the original value.");
+            
         assertEquals(kafkaTopic, config.get("topic"), 
             "Kafka topic in task config should match the original value.");
+
         assertEquals(subscriptionMessage, config.get("websocket.subscription.message"), 
             "Subscription message in task config should match the original value.");
+
+        assertEquals(pingMessage, config.get("websocket.ping.message"), 
+            "Ping message in task config should match the original value.");
+
+        assertEquals(String.valueOf(pingIntervalMs), config.get("websocket.ping.interval.ms"), 
+            "Ping interval in task config should match the original value.");
+
+        assertEquals(pongPattern, config.get("websocket.pong.pattern"), 
+            "Pong pattern in task config should match the original value.");
     }
 
     /**
