@@ -34,50 +34,6 @@ public class WebSocketSourceConnector extends SourceConnector {
 
      /** Properties loaded from the internal config.properties file (e.g., for version information). */
     private static final Properties properties = new Properties();
-
-    /** Defines the configuration options supported by this connector. */
-    private static final ConfigDef CONFIG_DEF = new ConfigDef()
-        .define(
-            "websocket.url", 
-            ConfigDef.Type.STRING, 
-            ConfigDef.Importance.HIGH, 
-            "The WebSocket URL to connect to."
-        )
-        .define(
-            "topic", 
-            ConfigDef.Type.STRING, 
-            ConfigDef.Importance.HIGH, 
-            "The Kafka topic where WebSocket messages will be published."
-        )
-        .define(
-            "websocket.subscription.message", 
-            ConfigDef.Type.STRING, 
-            "",
-            ConfigDef.Importance.LOW, 
-            "Optional subscription message to send after connecting to the WebSocket."
-        )
-        .define(
-            "websocket.ping.message",
-            ConfigDef.Type.STRING,
-            "",
-            ConfigDef.Importance.LOW,
-            "Optional ping message to send periodically to keep the WebSocket connection alive."
-        )
-        .define(
-            "websocket.ping.interval.ms",
-            ConfigDef.Type.INT,
-            20000,
-            ConfigDef.Importance.LOW,
-            "Interval in milliseconds between each ping message."
-        )
-        .define(
-            "websocket.pong.pattern",
-            ConfigDef.Type.STRING,
-            "",
-            ConfigDef.Importance.LOW,
-            "Regex pattern to detect pong responses in incoming WebSocket messages. " +
-            "If not provided, pong responses will be sent alongside other messages."
-        );
     
     // Static initializer to load the config.properties file at class loading time
     static {
@@ -112,9 +68,12 @@ public class WebSocketSourceConnector extends SourceConnector {
      */
     @Override
     public void start(Map<String, String> props) {
+        
         // Retrieve essential configurations
-        String websocketUrl = props.get("websocket.url");
-        String topic = props.get("topic");
+        WebSocketSourceConnectorConfig config = new WebSocketSourceConnectorConfig(props);
+
+        String websocketUrl = config.getString("websocket.url");
+        String topic = config.getString("topic");
         
         // Validate required configurations
         if (websocketUrl == null || websocketUrl.isEmpty()) {
@@ -170,6 +129,6 @@ public class WebSocketSourceConnector extends SourceConnector {
      * @return the configuration definition
      */
     public ConfigDef config() {
-        return CONFIG_DEF;
+        return WebSocketSourceConnectorConfig.CONFIG_DEF;
     }
 }

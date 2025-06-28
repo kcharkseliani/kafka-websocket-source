@@ -78,13 +78,16 @@ public class WebSocketSourceTask extends SourceTask {
      */
     @Override
     public void start(Map<String, String> props) {
-        kafkaTopic = props.get("topic");
+        
+        WebSocketSourceConnectorConfig config = new WebSocketSourceConnectorConfig(props);
 
-        String websocketUrl = props.get("websocket.url");
-        String subscriptionMessage = props.get("websocket.subscription.message");
-        String pingMessage = props.get("websocket.ping.message");
-        int pingIntervalMs = Integer.parseInt(props.get("websocket.ping.interval.ms"));
-        String pongPattern = props.get("websocket.pong.pattern");
+        kafkaTopic = config.getString("topic");
+
+        String websocketUrl = config.getString("websocket.url");
+        String subscriptionMessage = config.getString("websocket.subscription.message");
+        String pingMessage = config.getString("websocket.ping.message");
+        int pingIntervalMs = config.getInt("websocket.ping.interval.ms");
+        String pongPattern = config.getString("websocket.pong.pattern");
 
         // Pass the subscription message to the client
         client = clientFactory.createClient(
