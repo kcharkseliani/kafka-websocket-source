@@ -107,15 +107,10 @@ class WebSocketSourceConnectorTest {
         props.put("topic", kafkaTopic);
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
+        assertThrows(
+            org.apache.kafka.common.config.ConfigException.class,
             () -> connector.start(props),
-            "Expected IllegalArgumentException when 'websocket.url' is missing"
-        );
-        assertEquals(
-            "Missing required configuration: websocket.url",
-            exception.getMessage(),
-            "Exception message should indicate the missing 'websocket.url' property"
+            "Expected org.apache.kafka.common.config.ConfigException when'websocket.url' is missing"
         );
     }
 
@@ -130,15 +125,10 @@ class WebSocketSourceConnectorTest {
         props.put("websocket.url", websocketUrl);
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
+        assertThrows(
+            org.apache.kafka.common.config.ConfigException.class,
             () -> connector.start(props),
-            "Expected IllegalArgumentException when 'topic' is missing"
-        );
-        assertEquals(
-            "Missing required configuration: topic",
-            exception.getMessage(),
-            "Exception message should indicate the missing 'topic' property"
+            "Expected org.apache.kafka.common.config.ConfigException when 'topic' is missing"
         );
     }
 

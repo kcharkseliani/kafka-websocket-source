@@ -68,20 +68,9 @@ public class WebSocketSourceConnector extends SourceConnector {
      */
     @Override
     public void start(Map<String, String> props) {
-        
-        // Retrieve essential configurations
-        WebSocketSourceConnectorConfig config = new WebSocketSourceConnectorConfig(props);
 
-        String websocketUrl = config.getString("websocket.url");
-        String topic = config.getString("topic");
-        
-        // Validate required configurations
-        if (websocketUrl == null || websocketUrl.isEmpty()) {
-            throw new IllegalArgumentException("Missing required configuration: websocket.url");
-        }
-        if (topic == null || topic.isEmpty()) {
-            throw new IllegalArgumentException("Missing required configuration: topic");
-        }
+        // Validate essential configurations
+        new WebSocketSourceConnectorConfig(props);
 
         // Save the connector's configuration properties
         this.configProperties = props;
