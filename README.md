@@ -44,7 +44,7 @@ plugin.path=/path/to/connect-plugins
 
 ### 3. Kafka Connect Configuration
 
-Example JSON config for the connector:
+Example contents of the JSON config file for the connector:
 
 ```json
 {
@@ -54,9 +54,9 @@ Example JSON config for the connector:
     "tasks.max": "1",
     "websocket.url": "wss://example.com/feed",
     "topic": "websocket-topic",
-    "websocket.subscription.message": "{\"type\": \"subscribe\"}"
-    "websocket.ping.message": "{\"method\":\"ping\"}"
-    "websocket.ping.interval.ms": 20000
+    "websocket.subscription.message": "{\"type\": \"subscribe\"}",
+    "websocket.ping.message": "{\"method\":\"ping\"}",
+    "websocket.ping.interval.ms": 20000,
     "websocket.pong.pattern": "\\\"method\\\"\\s*:\\s*\\\"pong\\\""
   }
 }
@@ -64,7 +64,7 @@ Example JSON config for the connector:
 
 ### 4. Running the Connector
 
-Once Kafka Connect is running, you can deploy the WebSocket source connector using a configuration file:
+Once Kafka Connect is running, you can deploy the WebSocket source connector using a configuration file with the contents from the section above:
 
 ```bash
 curl -X POST http://<CONNECT_HOST>:8083/connectors \
