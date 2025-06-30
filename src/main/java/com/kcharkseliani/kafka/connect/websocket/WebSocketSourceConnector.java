@@ -17,7 +17,15 @@ import java.util.Properties;
 /**
  * A Kafka Connect {@link SourceConnector} implementation that streams messages from a WebSocket server into a Kafka topic.
  * 
- * This connector supports an optional subscription message that can be sent after establishing a WebSocket connection.
+ * This connector supports:
+ * <ul>
+ *   <li>An optional subscription message sent immediately after establishing the WebSocket connection</li>
+ *   <li>Periodic sending of configurable application-level ping messages to keep the connection alive</li>
+ *   <li>Filtering out of application-level pong messages using a configurable regex pattern</li>
+ * </ul>
+ * 
+ * Incoming WebSocket messages (excluding matched pong responses) are forwarded to Kafka as
+ * {@link org.apache.kafka.connect.source.SourceRecord} entries.
  */
 public class WebSocketSourceConnector extends SourceConnector {
 
@@ -26,28 +34,6 @@ public class WebSocketSourceConnector extends SourceConnector {
 
      /** Properties loaded from the internal config.properties file (e.g., for version information). */
     private static final Properties properties = new Properties();
-
-    /** Defines the configuration options supported by this connector. */
-    private static final ConfigDef CONFIG_DEF = new ConfigDef()
-        .define(
-            "websocket.url", 
-            ConfigDef.Type.STRING, 
-            ConfigDef.Importance.HIGH, 
-            "The WebSocket URL to connect to."
-        )
-        .define(
-            "topic", 
-            ConfigDef.Type.STRING, 
-            ConfigDef.Importance.HIGH, 
-            "The Kafka topic where WebSocket messages will be published."
-        )
-        .define(
-            "websocket.subscription.message", 
-            ConfigDef.Type.STRING, 
-            "", // Default to an empty string if not provided
-            ConfigDef.Importance.LOW, 
-            "Optional subscription message to send after connecting to the WebSocket."
-        );
     
     // Static initializer to load the config.properties file at class loading time
     static {
@@ -82,17 +68,9 @@ public class WebSocketSourceConnector extends SourceConnector {
      */
     @Override
     public void start(Map<String, String> props) {
-        // Retrieve essential configurations
-        String websocketUrl = props.get("websocket.url");
-        String topic = props.get("topic");
-        
-        // Validate required configurations
-        if (websocketUrl == null || websocketUrl.isEmpty()) {
-            throw new IllegalArgumentException("Missing required configuration: websocket.url");
-        }
-        if (topic == null || topic.isEmpty()) {
-            throw new IllegalArgumentException("Missing required configuration: topic");
-        }
+
+        // Validate essential configurations
+        new WebSocketSourceConnectorConfig(props);
 
         // Save the connector's configuration properties
         this.configProperties = props;
@@ -140,6 +118,6 @@ public class WebSocketSourceConnector extends SourceConnector {
      * @return the configuration definition
      */
     public ConfigDef config() {
-        return CONFIG_DEF;
+        return WebSocketSourceConnectorConfig.CONFIG_DEF;
     }
 }

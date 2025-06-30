@@ -48,6 +48,15 @@ public class WebSocketSourceTaskTest {
     /** Subscription message to send after WebSocket connection. */
     private final String subscriptionMessage = "{\"action\": \"subscribe\", \"channel\": \"test-stream\"}";
 
+    /** Application-level ping message to be sent periodically to the websocket server */
+    private final String pingMessage = "{\"message\":\"ping\"}";
+
+    /** Frequency with which to send the ping message (ms) */
+    private final int pingIntervalMs = 20000;
+
+    /** Pattern of the pong message to match so that pong messages can be excluded from being published */
+    private final String pongPattern = "\"message\"\\s*:\\s*\"pong\"";
+
      /** Properties loaded from config.properties, mainly for version testing. */
     private Properties properties;
 
@@ -72,30 +81,45 @@ public class WebSocketSourceTaskTest {
     }
 
     /**
-     * Verifies that when the task starts, it sends a subscription message
+     * Verifies that when the task starts, it passes all configs correctly
      * and connects using the created WebSocket client.
      *
      * @throws Exception if WebSocket connection setup fails
      */
     @Test
-    public void testStart_SendsSubscriptionMessageOnOpen() throws Exception {
+    public void testStart_WithAllValidConfigPassed() throws Exception {
         // Prepare props with topic, websocket URL, and subscription message
         Map<String, String> props = Map.of(
             "topic", kafkaTopic,
             "websocket.url", websocketUrl,
-            "websocket.subscription.message", subscriptionMessage
+            "websocket.subscription.message", subscriptionMessage,
+            "websocket.ping.message", pingMessage,
+            "websocket.ping.interval.ms", String.valueOf(pingIntervalMs),
+            "websocket.pong.pattern", pongPattern
         );
 
         // Set up the factory to return the mock client
         doReturn(mockClient)
-            .when(clientFactory).createClient(any(URI.class), any(String.class), any(MessageHandler.class));
+            .when(clientFactory).createClient(
+                any(URI.class), 
+                any(String.class),
+                any(String.class),
+                any(Integer.class),
+                any(String.class),
+                any(MessageHandler.class));
         
         // Call start with the prepared props
         task.start(props);
 
         // Assert
         // Verify that the clientFactory.createClient method was called with the expected arguments
-        verify(clientFactory).createClient(eq(URI.create(websocketUrl)), eq(subscriptionMessage), any(MessageHandler.class));
+        verify(clientFactory).createClient(
+            eq(URI.create(websocketUrl)), 
+            eq(subscriptionMessage), 
+            eq(pingMessage),
+            eq(pingIntervalMs),
+            eq(pongPattern),
+            any(MessageHandler.class));
         
         // Verify that client.connect() was called
         verify(mockClient).connect();
@@ -113,7 +137,10 @@ public class WebSocketSourceTaskTest {
         Map<String, String> props = Map.of(
             "topic", kafkaTopic,
             "websocket.url", websocketUrl,
-            "websocket.subscription.message", subscriptionMessage
+            "websocket.subscription.message", subscriptionMessage,
+            "websocket.ping.message", "",
+            "websocket.ping.interval.ms", String.valueOf(20000),
+            "websocket.pong.pattern", ""
         );
 
         // Capture the MessageHandler when createClient is called
@@ -121,7 +148,13 @@ public class WebSocketSourceTaskTest {
         
         // Set up the factory to return a mock client and capture the handler
         doReturn(mockClient)
-            .when(clientFactory).createClient(any(URI.class), any(String.class), messageHandlerCaptor.capture());
+            .when(clientFactory).createClient(
+                any(URI.class), 
+                any(String.class), 
+                any(String.class),
+                any(Integer.class),
+                any(String.class),
+                messageHandlerCaptor.capture());
 
         // Start the task
         task.start(props);
@@ -154,11 +187,20 @@ public class WebSocketSourceTaskTest {
         Map<String, String> props = Map.of(
             "topic", kafkaTopic,
             "websocket.url", websocketUrl,
-            "websocket.subscription.message", subscriptionMessage
+            "websocket.subscription.message", subscriptionMessage,
+            "websocket.ping.message", "",
+            "websocket.ping.interval.ms", String.valueOf(20000),
+            "websocket.pong.pattern", ""
         );
         // Prepare the task
         doReturn(mockClient)
-            .when(clientFactory).createClient(any(URI.class), any(String.class), any(MessageHandler.class));
+            .when(clientFactory).createClient(
+                any(URI.class), 
+                any(String.class), 
+                any(String.class),
+                any(Integer.class),
+                any(String.class),
+                any(MessageHandler.class));
 
         task.start(props);
 
@@ -180,11 +222,20 @@ public class WebSocketSourceTaskTest {
         Map<String, String> props = Map.of(
             "topic", kafkaTopic,
             "websocket.url", websocketUrl,
-            "websocket.subscription.message", subscriptionMessage
+            "websocket.subscription.message", subscriptionMessage,
+            "websocket.ping.message", "",
+            "websocket.ping.interval.ms", String.valueOf(20000),
+            "websocket.pong.pattern", ""
         );
         // Prepare the task
         doReturn(mockClient)
-            .when(clientFactory).createClient(any(URI.class), any(String.class), any(MessageHandler.class));
+            .when(clientFactory).createClient(
+                any(URI.class), 
+                any(String.class), 
+                any(String.class),
+                any(Integer.class),
+                any(String.class),
+                any(MessageHandler.class));
 
         // Start the task to initialize properties from config.properties
         task.start(props);

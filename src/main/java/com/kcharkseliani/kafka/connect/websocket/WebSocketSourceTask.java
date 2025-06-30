@@ -17,8 +17,15 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * A Kafka Connect {@link SourceTask} implementation that receives messages from a WebSocket server
- * and produces them to a Kafka topic as {@link SourceRecord} entries.
+ * A Kafka Connect {@link SourceTask} implementation that receives messages from a WebSocket server and
+ * produces those that do not match the pong pattern to a Kafka topic as {@link SourceRecord} entries.
+ * 
+ * It supports:
+ * <ul>
+ *   <li>An optional subscription message sent immediately after establishing the WebSocket connection</li>
+ *   <li>Periodic sending of configurable application-level ping messages to keep the connection alive</li>
+ *   <li>Filtering out of application-level pong messages using a configurable regex pattern</li>
+ * </ul>
  */
 public class WebSocketSourceTask extends SourceTask {
 
@@ -71,16 +78,35 @@ public class WebSocketSourceTask extends SourceTask {
      */
     @Override
     public void start(Map<String, String> props) {
-        kafkaTopic = props.get("topic");
-        String subscriptionMessage = props.get("websocket.subscription.message"); // Retrieve subscription message
+        
+        WebSocketSourceConnectorConfig config = new WebSocketSourceConnectorConfig(props);
+
+        kafkaTopic = config.getString("topic");
+
+        String websocketUrl = config.getString("websocket.url");
+        String subscriptionMessage = config.getString("websocket.subscription.message");
+        String pingMessage = config.getString("websocket.ping.message");
+        int pingIntervalMs = config.getInt("websocket.ping.interval.ms");
+        String pongPattern = config.getString("websocket.pong.pattern");
 
         // Pass the subscription message to the client
-        client = clientFactory.createClient(URI.create(props.get("websocket.url")), subscriptionMessage, message -> {
-            SourceRecord record = new SourceRecord(
-                null, null, kafkaTopic, Schema.STRING_SCHEMA, message
-            );
-            recordsQueue.add(record);
-        });       
+        client = clientFactory.createClient(
+            URI.create(websocketUrl),
+            subscriptionMessage,
+            pingMessage,
+            pingIntervalMs,
+            pongPattern,
+            message -> {
+                SourceRecord record = new SourceRecord(
+                    null, 
+                    null, 
+                    kafkaTopic, 
+                    Schema.STRING_SCHEMA, 
+                    message
+                );
+                recordsQueue.add(record);
+            }
+        );      
 
         client.connect();
     }

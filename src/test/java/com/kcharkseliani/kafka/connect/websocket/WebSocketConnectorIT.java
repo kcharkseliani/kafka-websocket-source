@@ -14,6 +14,7 @@ import com.kcharkseliani.kafka.connect.websocket.util.MockWebSocketServer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -30,6 +31,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import org.testcontainers.containers.Network;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.JsonNode;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Integration tests for the WebSocket Kafka Source Connector 
@@ -129,7 +132,7 @@ public class WebSocketConnectorIT {
      */
     @Test
     void testConnectorDeployment_ShouldSucceed() throws Exception {
-        deployWebSocketConnector();
+        deployWebSocketConnector(false);
     }   
 
     /**
@@ -140,7 +143,7 @@ public class WebSocketConnectorIT {
      */
     @Test
     void testConnectorDeployment_ShouldEstablishConnectionToServer() throws Exception {
-        deployWebSocketConnector();
+        deployWebSocketConnector(false);
 
         // Wait up to 5 seconds for connector to establish WebSocket connection
         boolean connected = waitForWebSocketConnection(5_000);
@@ -157,7 +160,7 @@ public class WebSocketConnectorIT {
     @Test
     void testConnectorDeployment_ShouldSendSubscriptionMessageToServer() throws Exception {
         // Step 1: Deploy the WebSocket Kafka Connector
-        deployWebSocketConnector();
+        deployWebSocketConnector(false);
 
         // Step 2: Wait for connector to establish WebSocket connection
         boolean connected = waitForWebSocketConnection(5_000);
@@ -185,7 +188,7 @@ public class WebSocketConnectorIT {
     @Test
     void testWebSocketMessage_ShouldBePublishedToKafkaTopic() throws Exception {
         // Step 1: Deploy the WebSocket Kafka Connector
-        deployWebSocketConnector();
+        deployWebSocketConnector(false);
 
         // Step 2: Wait for the connector to establish a WebSocket connection
         boolean connected = waitForWebSocketConnection(5_000);
@@ -236,6 +239,95 @@ public class WebSocketConnectorIT {
     }
 
     /**
+     * Full end-to-end test to verify that a WebSocket app-level ping message
+     * is sent to the server and returned pong is ignored by the connector.
+     *
+     * @throws Exception if message publishing or validation fails
+     */
+    @Test
+    void testWebSocketPing_ShouldSendAndIgnorePong() throws Exception {
+
+        // Test and ping messages expected to be sent to or received from the websocket server
+        String expectedTestMessage = "{\"data\": \"test\"}";
+        String expectedPingMessage = "{\"message\": \"ping\"}";
+        String expectedPongMessage = "{\"message\": \"pong\"}";
+
+        // Step 1: Deploy the WebSocket Kafka Connector
+        deployWebSocketConnector(true);
+
+        // Step 2: Wait for the connector to establish a WebSocket connection
+        boolean connected = waitForWebSocketConnection(5_000);
+        assertTrue(connected, "Connector should establish a WebSocket connection to the mock server");
+
+        // Step 3: Send a test WebSocket message and pong through the mock WebSocket server
+        websocketServer.broadcast(expectedTestMessage);
+
+        websocketServer.broadcast(expectedPongMessage);
+
+        // Step 4: Configure Kafka consumer properties
+        Properties consumerProps = new Properties();
+        consumerProps.put("bootstrap.servers", kafka.getBootstrapServers()); // Connect to the Kafka container
+        consumerProps.put("group.id", "test-consumer-group"); // Group ID for isolation
+        consumerProps.put("key.deserializer", StringDeserializer.class.getName()); // Key deserializer
+        consumerProps.put("value.deserializer", StringDeserializer.class.getName()); // Value deserializer
+        consumerProps.put("auto.offset.reset", "earliest"); // Make sure we read messages from the beginning
+
+        // Step 5: Create a Kafka consumer to consume from the 'test-topic' topic
+        try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(consumerProps)) {
+            consumer.subscribe(List.of(TOPIC)); // Subscribe to the topic produced by the connector
+
+            boolean messageReceived = false;
+            long timeoutMillis = 5000; // How long to wait for the message
+            long start = System.currentTimeMillis();
+
+            // Step 6: Poll Kafka for new messages until timeout expires
+            while (System.currentTimeMillis() - start < timeoutMillis) {
+                ConsumerRecords<String, String> records = consumer.poll(java.time.Duration.ofMillis(500)); // poll every 500ms
+
+                for (ConsumerRecord<String, String> record : records) {
+                    String value = record.value();
+                    System.out.println("Received message from Kafka: " + value);
+
+                    if (value.contains(expectedTestMessage)) {
+                        messageReceived = true;
+                    } else if (value.contains(expectedPongMessage)) {
+                        fail("Pong message should have been filtered out and not appear in Kafka.");
+                    }
+                }
+
+                if (messageReceived) {
+                    break; // Stop polling once we found the expected message
+                }
+            }
+
+            // Step 8: Assert that we successfully received the WebSocket message in Kafka
+            assertTrue(messageReceived, "Expected WebSocket message was not found in Kafka topic 'test-topic'.");
+        }
+
+        // Step 6: Retrieve the messages received by the mock server
+        List<String> receivedMessages = websocketServer.getReceivedMessages();
+
+        // Step 7: Verify that a ping message was received
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode expectedJson = objectMapper.readTree(expectedPingMessage);
+
+        // Since message is a JSON need to make sure we compare as JSON
+        // Otherwise extra white spaces are not handled properly
+        boolean subscriptionReceived = receivedMessages.stream()
+            .map(msg -> {
+                try {
+                    return objectMapper.readTree(msg);
+                } catch (Exception e) {
+                    return null;
+                }
+            })
+            .filter(json -> json != null)
+            .anyMatch(json -> json.equals(expectedJson));
+
+        assertTrue(subscriptionReceived, "Expected ping message was not received by the WebSocket server.");
+    }
+
+    /**
      * Stops all containers and the mock WebSocket server after each test.
      *
      * @throws InterruptedException if container shutdown is interrupted
@@ -280,21 +372,34 @@ public class WebSocketConnectorIT {
     /**
      * Deploys the WebSocket source connector to the running Kafka Connect instance.
      *
+     * @param withPing if true, adds ping-related configuration to keep the WebSocket connection alive
      * @throws Exception if the HTTP request to deploy the connector fails
      */
-    private void deployWebSocketConnector() throws Exception {
+    private void deployWebSocketConnector(boolean withPing) throws Exception {
         String connectUrl = "http://" + connect.getHost() + ":" + connect.getMappedPort(8083);
 
-        String configJson = "{\n" +
-            "  \"name\": \"websocket-source-connector\",\n" +
-            "  \"config\": {\n" +
-            "    \"connector.class\": \"com.kcharkseliani.kafka.connect.websocket.WebSocketSourceConnector\",\n" +
-            "    \"tasks.max\": \"1\",\n" +
-            "    \"websocket.url\": \"ws://host.testcontainers.internal:" + WEBSOCKET_PORT + "\",\n" +
-            "    \"topic\": \"" + TOPIC + "\",\n" +
-            "    \"websocket.subscription.message\": \"{ \\\"message\\\": \\\"subscribe\\\" }\"\n" +
-            "  }\n" +
-            "}";
+        // Base connector config
+        StringBuilder configBuilder = new StringBuilder();
+        configBuilder.append("{\n")
+            .append("  \"name\": \"websocket-source-connector\",\n")
+            .append("  \"config\": {\n")
+            .append("    \"connector.class\": \"com.kcharkseliani.kafka.connect.websocket.WebSocketSourceConnector\",\n")
+            .append("    \"tasks.max\": \"1\",\n")
+            .append("    \"websocket.url\": \"ws://host.testcontainers.internal:").append(WEBSOCKET_PORT).append("\",\n")
+            .append("    \"topic\": \"").append(TOPIC).append("\",\n")
+            .append("    \"websocket.subscription.message\": \"{ \\\"message\\\": \\\"subscribe\\\" }\"");
+
+        if (withPing) {
+            configBuilder.append(",\n")
+                .append("    \"websocket.ping.message\": \"{ \\\"message\\\": \\\"ping\\\" }\",\n")
+                .append("    \"websocket.ping.interval.ms\": \"4000\",\n")
+                .append("    \"websocket.pong.pattern\": \"\\\"message\\\"\\\\s*:\\\\s*\\\"pong\\\"\"");
+        }
+
+        configBuilder.append("\n  }\n}")
+                    .append("\n");
+
+        String configJson = configBuilder.toString();
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -305,7 +410,7 @@ public class WebSocketConnectorIT {
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(201, response.statusCode(), "Connector creation failed: " + response.body());
-    }   
+    }
 
     /**
      * Waits until the WebSocket server detects at least one client connection
