@@ -6,6 +6,8 @@ A Kafka Connect **source connector** that establishes a WebSocket connection to 
 
 - Connects to a specified WebSocket URL.
 - Sends an initial subscription message if configured.
+- Periodically sends application-level ping messages
+- Matches incoming pong messages using a specified regex pattern to log and exclude from the message stream
 - Converts incoming WebSocket messages into Kafka `SourceRecord` entries.
 - Fully compatible with Kafka Connect standalone and distributed modes.
 - Supports integration testing using Testcontainers.
@@ -39,6 +41,9 @@ Example JSON config for the connector:
     "websocket.url": "wss://example.com/feed",
     "topic": "websocket-topic",
     "websocket.subscription.message": "{\"type\": \"subscribe\"}"
+    "websocket.ping.message": "{\"method\":\"ping\"}"
+    "websocket.ping.interval.ms": 20000
+    "websocket.pong.pattern": "\\\"method\\\"\\s*:\\s*\\\"pong\\\""
   }
 }
 ```
@@ -65,7 +70,10 @@ curl -X POST http://<CONNECT_HOST>:8083/connectors \
 |-----------------------------------|----------|----------------------------------------------------------|
 | `websocket.url`                   | Yes      | WebSocket server URL to connect to.                     |
 | `topic`                           | Yes      | Kafka topic to publish received messages.               |
-| `websocket.subscription.message` | No       | Message to send after connection (e.g., subscription).  |
+| `websocket.subscription.message`  | No       | Message to send after connection (e.g., subscription).  |
+| `websocket.ping.message`          | No       | Optional ping message to send periodically to keep the WebSocket connection alive.  |
+| `websocket.ping.interval.ms`      | No       | Interval in milliseconds between each ping message. Defaults to 20000 (20 seconds) |
+| `websocket.pong.pattern`          | No       | Regex pattern to detect pong responses in incoming WebSocket messages. If not provided, pong responses will be sent alongside other messages.  |
 
 ## Development
 
@@ -95,15 +103,16 @@ mvn failsafe:integration-test failsafe:verify
 
 - `WebSocketSourceConnector`: Main entry point implementing `SourceConnector`.
 - `WebSocketSourceTask`: Handles data streaming logic from WebSocket to Kafka.
+- `WebSocketSourceConnectorConfig`: Handles `ConfigDef` initialisation and definition and validation of connector configuration
+- `WebSocketClientFactory`: Interface for factories instantiating websocket clients.
 - `DefaultWebSocketClientFactory`: Creates WebSocket client instances.
-- `MockWebSocketServer`: Embedded WebSocket server for integration testing.
+- `MessageHandler`: Functional interface for handling messages received from a WebSocket connection.
 
 ## Publishing
 
 You can release the connector as:
 
 - A GitHub Release (upload the `.jar`)
-- A GitHub Package (optional, if using Maven Central or GitHub Packages)
 
 ## License
 
