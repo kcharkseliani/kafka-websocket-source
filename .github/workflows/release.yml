@@ -1,9 +1,11 @@
-name: Create Release on Merge to Dev
+name: Create and Build Release on Pull Request or Dispatch
 
 on:
   push:
     branches:
       - dev
+      - release/*
+      - main
       
   workflow_dispatch:
     inputs:
@@ -15,6 +17,15 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+
+    services:
+      docker:
+        image: docker:28.1.1
 
     steps:
     # Step 1: Check out the repository
@@ -35,25 +46,56 @@ jobs:
     - name: Install GitVersion
       uses: gittools/actions/gitversion/setup@v3.0.3
       with:
-        versionSpec: '6.x'
+        versionSpec: '6.0.5'
 
-    # Step 4: Run GitVersion to determine the version
+    # Step 4: Run GitVersion to determine the majorMinorPatch, then tag if the branch is `main`
+    - name: Get majorMinorPatch version with GitVersion before tagging on main
+      if: github.ref == 'refs/heads/main'
+      id: gitversion_main
+      uses: gittools/actions/gitversion/execute@v3.0.3
+    
+    - name: Tag main branch immediately
+      if: github.ref == 'refs/heads/main'
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git tag -a ${{ steps.gitversion_main.outputs.majorMinorPatch }} -m "Stable Release ${{ steps.gitversion_main.outputs.majorMinorPatch }}"
+        git push origin ${{ steps.gitversion_main.outputs.majorMinorPatch }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Step 5: Run GitVersion to determine version (updated after tagging if first got version with main from Step 4)
     - name: Determine version with GitVersion
       id: gitversion
       uses: gittools/actions/gitversion/execute@v3.0.3
 
-    # Step 5: Update Maven POM version
+    # Step 6: Update Maven POM version
     - name: Display Version
       run: echo "Version ${{ steps.gitversion.outputs.semVer }}"
 
     - name: Set Maven Project Version
       run: mvn versions:set -DnewVersion=${{ steps.gitversion.outputs.semVer }}
 
-    # Step 6: Build the project
-    - name: Build the project (Skip tests)
-      run: mvn clean package -DskipTests
+    # Step 7: Build the project
+    - name: Run unit tests and build the project
+      run: mvn clean package
 
-    # Step 7: Upload build artifact as a release
+    # Step 8: Run integration tests (fails if Docker is not available or tests fail)
+    - name: Run integration tests
+      run: mvn failsafe:integration-test failsafe:verify
+
+    # Step 9: Tag the commit with the version
+    - name: Tag the commit with version
+      if: startsWith(github.ref, 'refs/heads/release/')
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git tag -a ${{ steps.gitversion.outputs.semVer }} -m "Release ${{ steps.gitversion.outputs.semVer }}"
+        git push origin ${{ steps.gitversion.outputs.semVer }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Step 10: Upload build artifact as a release
     - name: Create a GitHub release
       id: create_release
       uses: actions/create-release@v1
@@ -63,8 +105,9 @@ jobs:
         tag_name: ${{ steps.gitversion.outputs.semVer }}
         release_name: Release ${{ steps.gitversion.outputs.semVer }}
         draft: true
-        prerelease: true
+        prerelease: ${{ github.ref != 'refs/heads/main' }}
 
+    # Step 11: Upload .jar to release
     - name: Upload .jar to release
       uses: actions/upload-release-asset@v1
       env:

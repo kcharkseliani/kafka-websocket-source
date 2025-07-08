@@ -1,0 +1,14 @@
+branches:
+  feature:
+    mode: ContinuousDelivery
+    label: '{BranchName}'
+    increment: Inherit
+  develop:
+    label: alpha
+    increment: Minor
+  main:
+    label: ''
+    increment: Patch
+ignore:
+  sha: []
+merge-message-formats: {}
